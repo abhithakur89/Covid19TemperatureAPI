@@ -6,19 +6,15 @@ using System.Text;
 
 namespace Covid19TemperatureAPI.Entities.Data
 {
-    [Table("Sites")]
-    public class Site
+    [Table("Departments")]
+    public class Department
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int SiteId { get; set; }
-        public string SiteName { get; set; }
-
-        public string SiteDescription { get; set; }
-
-        public virtual ICollection<Building> Buildings { get; set; }
+        public int DepartmentId { get; set; }
+        public string DepartmentCode { get; set; }
+        public string DepartmentName { get; set; }
 
         public virtual ICollection<Employee> Employees { get; set; }
-
     }
 }

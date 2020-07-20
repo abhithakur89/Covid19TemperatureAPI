@@ -9,6 +9,8 @@
     <Compile Remove="Migrations\20200720060706_DeviceTypeAdded.Designer.cs" />
     <Compile Remove="Migrations\20200720060758_DeviceTypeAdded.cs" />
     <Compile Remove="Migrations\20200720060758_DeviceTypeAdded.Designer.cs" />
+    <Compile Remove="Migrations\20200720065525_EmployeeAdded.cs" />
+    <Compile Remove="Migrations\20200720065525_EmployeeAdded.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>
