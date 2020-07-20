@@ -20,6 +20,6 @@ namespace Covid19TemperatureAPI.Entities.Data
         public int SiteId { get; set; }
         public virtual Site Site { get; set; }
 
-
+        public virtual ICollection<Floor> Floors { get; set; }
     }
 }
