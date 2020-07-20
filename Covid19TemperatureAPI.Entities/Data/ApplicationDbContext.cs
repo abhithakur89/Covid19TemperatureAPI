@@ -15,5 +15,6 @@ namespace Covid19TemperatureAPI.Entities.Data
         }
 
         public DbSet<Site> Sites { get; set; }
+        public DbSet<Building> Buildings { get; set; }
     }
 }

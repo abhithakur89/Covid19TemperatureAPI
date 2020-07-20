@@ -15,5 +15,8 @@ namespace Covid19TemperatureAPI.Entities.Data
         public string SiteName { get; set; }
 
         public string SiteDescription { get; set; }
+
+        public virtual ICollection<Building> Buildings { get; set; }
+
     }
 }
