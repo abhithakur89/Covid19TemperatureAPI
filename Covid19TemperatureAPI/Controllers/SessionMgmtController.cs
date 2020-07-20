@@ -69,6 +69,7 @@ namespace Covid19TemperatureAPI.Controllers
         /// <param name="jCredentials">JSON username password</param>
         /// <returns>
         /// </returns>
+        [HttpPost]
         public async Task<ActionResult> Login([FromBody]JObject jCredentials)
         {
             try
@@ -185,6 +186,7 @@ namespace Covid19TemperatureAPI.Controllers
         /// <returns>
         /// </returns>
         /// 
+        [HttpPost]
         public async Task<ActionResult<string>> Logout()
         {
             try
