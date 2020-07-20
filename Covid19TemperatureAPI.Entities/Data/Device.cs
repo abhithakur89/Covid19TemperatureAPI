@@ -19,5 +19,6 @@ namespace Covid19TemperatureAPI.Entities.Data
         public virtual Gate Gate { get; set; }
 
         public virtual ICollection<TemperatureRecord> TemperatureRecords { get; set; }
+        public virtual ICollection<MaskRecord> MaskRecords { get; set; }
     }
 }

@@ -22,5 +22,6 @@ namespace Covid19TemperatureAPI.Entities.Data
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<TemperatureRecord> TemperatureRecords { get; set; }
+        public DbSet<MaskRecord> MaskRecords { get; set; }
     }
 }
