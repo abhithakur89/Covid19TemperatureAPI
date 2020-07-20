@@ -14,7 +14,7 @@ namespace Covid19TemperatureAPI.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            return new string[] { "value10", "value20" };
+            return new string[] { "value100", "value200" };
         }
 
         // GET api/values/5
