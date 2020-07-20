@@ -100,7 +100,7 @@ namespace Covid19TemperatureAPI
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Covid-19 Temperature Rest API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "TEMPERATURE API V1");
             });
 
             app.UseStaticFiles();
