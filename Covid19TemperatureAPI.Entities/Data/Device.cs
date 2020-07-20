@@ -6,14 +6,15 @@ using System.Text;
 
 namespace Covid19TemperatureAPI.Entities.Data
 {
-    [Table("DeviceTypes")]
-    public class DeviceType
+    [Table("Devices")]
+    public class Device
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int DeviceTypeId { get; set; }
-        public string DeviceTypeDescription { get; set; }
+        public string DeviceId { get; set; }
 
-        public virtual ICollection<Device> Devices { get; set; }
+        [ForeignKey("DeviceTypeId")]
+        public int DeviceTypeId { get; set; }
+        public virtual DeviceType DeviceType { get; set; }
+
     }
 }
