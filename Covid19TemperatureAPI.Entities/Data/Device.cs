@@ -12,9 +12,10 @@ namespace Covid19TemperatureAPI.Entities.Data
         [Key]
         public string DeviceId { get; set; }
 
-        [ForeignKey("DeviceTypeId")]
-        public int DeviceTypeId { get; set; }
-        public virtual DeviceType DeviceType { get; set; }
+        public string DeviceDetails { get; set; }
 
+        [ForeignKey("Gate")]
+        public int GateId { get; set; }
+        public virtual Gate Gate { get; set; }
     }
 }

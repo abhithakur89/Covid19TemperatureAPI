@@ -11,23 +11,24 @@ namespace Covid19TemperatureAPI.Entities.Migrations
                 columns: table => new
                 {
                     DeviceId = table.Column<string>(nullable: false),
-                    DeviceTypeId = table.Column<int>(nullable: false)
+                    DeviceDetails = table.Column<string>(nullable: true),
+                    GateId = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Devices", x => x.DeviceId);
                     table.ForeignKey(
-                        name: "FK_Devices_DeviceTypes_DeviceTypeId",
-                        column: x => x.DeviceTypeId,
-                        principalTable: "DeviceTypes",
-                        principalColumn: "DeviceTypeId",
+                        name: "FK_Devices_Gates_GateId",
+                        column: x => x.GateId,
+                        principalTable: "Gates",
+                        principalColumn: "GateId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Devices_DeviceTypeId",
+                name: "IX_Devices_GateId",
                 table: "Devices",
-                column: "DeviceTypeId");
+                column: "GateId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

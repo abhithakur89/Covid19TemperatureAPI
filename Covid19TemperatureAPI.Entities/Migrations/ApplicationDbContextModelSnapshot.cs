@@ -43,26 +43,15 @@ namespace Covid19TemperatureAPI.Entities.Migrations
                     b.Property<string>("DeviceId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<int>("DeviceTypeId");
+                    b.Property<string>("DeviceDetails");
+
+                    b.Property<int>("GateId");
 
                     b.HasKey("DeviceId");
 
-                    b.HasIndex("DeviceTypeId");
+                    b.HasIndex("GateId");
 
                     b.ToTable("Devices");
-                });
-
-            modelBuilder.Entity("Covid19TemperatureAPI.Entities.Data.DeviceType", b =>
-                {
-                    b.Property<int>("DeviceTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("DeviceTypeDescription");
-
-                    b.HasKey("DeviceTypeId");
-
-                    b.ToTable("DeviceTypes");
                 });
 
             modelBuilder.Entity("Covid19TemperatureAPI.Entities.Data.Floor", b =>
@@ -291,9 +280,9 @@ namespace Covid19TemperatureAPI.Entities.Migrations
 
             modelBuilder.Entity("Covid19TemperatureAPI.Entities.Data.Device", b =>
                 {
-                    b.HasOne("Covid19TemperatureAPI.Entities.Data.DeviceType", "DeviceType")
+                    b.HasOne("Covid19TemperatureAPI.Entities.Data.Gate", "Gate")
                         .WithMany("Devices")
-                        .HasForeignKey("DeviceTypeId")
+                        .HasForeignKey("GateId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
