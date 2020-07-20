@@ -21,5 +21,8 @@ namespace Covid19TemperatureAPI.Entities.Data
         [ForeignKey("Building")]
         public int BuildingId { get; set; }
         public virtual Building Building { get; set; }
+
+        public virtual ICollection<Gate> Gates { get; set; }
+
     }
 }
