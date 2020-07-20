@@ -1,22 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Covid19TemperatureAPI.Entities.Data;
 using Covid19TemperatureAPI.Entities.Models;
 using IdentityServer4.AccessTokenValidation;
+using IdentityServer4.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace Covid19TemperatureAPI
@@ -34,9 +31,9 @@ namespace Covid19TemperatureAPI
         public void ConfigureServices(IServiceCollection services)
         {
             //SeedData.EnsureSeedData(Configuration["SqlServerConnectionString"]);
-            
+
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(Configuration["SqlServerConnectionString"]));
+                options.UseSqlServer(Configuration["SqlServerConnectionString"]), ServiceLifetime.Transient);
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
