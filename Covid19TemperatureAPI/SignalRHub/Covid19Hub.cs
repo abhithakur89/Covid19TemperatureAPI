@@ -1,4 +1,5 @@
 ﻿using Covid19TemperatureAPI.Entities.Data;
+using Covid19TemperatureAPI.Mobile;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,7 @@ namespace Covid19TemperatureAPI.SignalRHub
 
             string notificationMessageToSend = message;
 
+            // Prepare push message
             if (notifiationMsgRecieved.Notification == "Abnormal Temperature")
             {
                 var abnormalTemperatureNotifiationMsg = new {
@@ -61,48 +63,45 @@ namespace Covid19TemperatureAPI.SignalRHub
                     abnormalTemperatureNotifiationMsg.Timestamp
                 };
 
+
+                // Final Push Message
                 notificationMessageToSend = JsonConvert.SerializeObject(abnormalTemperatureNotifiationMsgWithEmployeeInfo);
+
+                // Push all clients
+                await Clients.All.ReceiveMessage(notificationMessageToSend);
+
+                // Prepare SMS
+                string smsBody = DbContext.Configurations
+                    .Where(x => x.ConfigKey == "Abnormal_Temperature_SMS_Body")
+                    .Select(x => x.ConfigValue)
+                    .FirstOrDefault();
+
+                // Get mobile numbers for this site 
+                var v = from a in DbContext.Devices
+                                    join b in DbContext.Gates on a.GateId equals b.GateId
+                                    join c in DbContext.AlertMobileNumbers on b.Floor.Building.SiteId equals c.SiteId
+                                    where a.DeviceId == abnormalTemperatureNotifiationMsg.DeviceId
+                                    select new
+                                    {
+                                        c.MobileNumber, b.Floor.Building.BuildingName, b.GateNumber
+                                    };
+
+                // Send SMS 
+                foreach (var v1 in v)
+                {
+                    var body = smsBody + $"\nName - {abnormalTemperatureNotifiationMsg.PersonName}\n" +
+                        $"Temperature - {abnormalTemperatureNotifiationMsg.Temperature}\n" +
+                        $"Building - {v1.BuildingName}\n" +
+                        $"Gate - {v1.GateNumber}\n" +
+                        $"Time - {Convert.ToDateTime(abnormalTemperatureNotifiationMsg.Timestamp).ToString("MMMM dd hh:mm tt")}";
+
+                    SMSSender.SendSMS(ApiKey: Configuration["NexmmoApiKey"],
+                        ApiSecret: Configuration["NexmoApiSecret"],
+                        from: Configuration["SMSSender"],
+                        to: v1.MobileNumber,
+                        msg: body);
+                }
             }
-
-            await Clients.All.ReceiveMessage(notificationMessageToSend);
-        }
-
-        public async Task SendToCaller(string message)
-        {
-            await Clients.Caller.ReceiveMessage(message);
-        }
-
-        public async Task SendToOthers(string message)
-        {
-            await Clients.Others.ReceiveMessage(message);
-        }
-
-        public async Task SendToGroup(string groupName, string message)
-        {
-            await Clients.Group(groupName).ReceiveMessage(message);
-        }
-
-        public async Task AddUserToGroup(string groupName)
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Caller.ReceiveMessage($"Current user added to {groupName} group");
-            await Clients.Others.ReceiveMessage($"User {Context.ConnectionId} added to {groupName} group");
-        }
-        public async Task RemoveUserFromGroup(string groupName)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Caller.ReceiveMessage($"Current user removed from {groupName} group");
-            await Clients.Others.ReceiveMessage($"User {Context.ConnectionId} removed from {groupName} group");
-        }
-        public override async Task OnConnectedAsync()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "HubUsers");
-            await base.OnConnectedAsync();
-        }
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "HubUsers");
-            await base.OnDisconnectedAsync(exception);
         }
     }
 }
