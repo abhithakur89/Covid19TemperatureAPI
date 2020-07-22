@@ -109,7 +109,7 @@ namespace Covid19TemperatureAPI
 
             app.UseSignalR(routes =>
             {
-                routes.MapHub<Covid19Hub>("/covid19hub");
+                routes.MapHub<Covid19Hub>(Configuration["SignalRHubRelativeUrl"]);
             });
 
             app.UseMvcWithDefaultRoute();
