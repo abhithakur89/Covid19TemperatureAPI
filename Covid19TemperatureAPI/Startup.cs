@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Covid19TemperatureAPI.Entities.Data;
 using Covid19TemperatureAPI.Entities.Models;
+using Covid19TemperatureAPI.SignalRHub;
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,6 +41,8 @@ namespace Covid19TemperatureAPI
                 .AddDefaultTokenProviders();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            services.AddSignalR();
 
             services.AddSingleton<IConfiguration>(Configuration);
 
@@ -103,6 +106,12 @@ namespace Covid19TemperatureAPI
             app.UseStaticFiles();
             app.UseAuthentication();
             app.UseIdentityServer();
+
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<Covid19Hub>("/covid19hub");
+            });
+
             app.UseMvcWithDefaultRoute();
             //app.UseHttpsRedirection();
             //app.UseMvc();
