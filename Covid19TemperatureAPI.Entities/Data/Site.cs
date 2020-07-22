@@ -19,6 +19,8 @@ namespace Covid19TemperatureAPI.Entities.Data
         public virtual ICollection<Building> Buildings { get; set; }
 
         public virtual ICollection<Employee> Employees { get; set; }
+        public virtual ICollection<AlertEmailAddress> EmailAddresses { get; set; }
+        public virtual ICollection<AlertMobileNumber> AlertMobileNumbers { get; set; }
 
     }
 }
