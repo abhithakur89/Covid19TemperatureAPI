@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Covid19TemperatureAPI.Entities.Data;
 using Covid19TemperatureAPI.Entities.Models;
+using Covid19TemperatureAPI.SenseTime;
 using Covid19TemperatureAPI.SignalRHub;
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Models;
@@ -91,6 +92,9 @@ namespace Covid19TemperatureAPI
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+
+            // Adding Sensetime
+            services.AddScoped<ISensetime, SensetimeImpl>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,5 +1,6 @@
 ﻿using Covid19TemperatureAPI.Entities.Data;
 using Covid19TemperatureAPI.Helper;
+using Covid19TemperatureAPI.SenseTime;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,7 @@ namespace Covid19TemperatureAPI.Controllers
         private IConfiguration Configuration;
         private readonly ILogger<SiteController> _logger;
         private ApplicationDbContext Context { get; set; }
+        ISensetime Sensetime;
 
         private enum ResponseCodes
         {
@@ -31,11 +33,12 @@ namespace Covid19TemperatureAPI.Controllers
             SystemError = 1201,
         }
 
-        public SiteController(IConfiguration configuration, ApplicationDbContext applicationDbContext, ILogger<SiteController> logger)
+        public SiteController(IConfiguration configuration, ApplicationDbContext applicationDbContext, ILogger<SiteController> logger, ISensetime sensetime)
         {
             Configuration = configuration;
             Context = applicationDbContext;
             _logger = logger;
+            Sensetime = sensetime;
         }
 
         /// <summary>
@@ -185,6 +188,45 @@ namespace Covid19TemperatureAPI.Controllers
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
                     devices
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        [Route("getsitesummary")]
+        public ActionResult GetSiteSummary([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetSiteSummary() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+
+                var res = Sensetime.Login(Configuration["SensetimeUsername"], Configuration["SensetimePassword"], Configuration["SensetimeAccontType"]);
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    res
                 });
             }
             catch (Exception e)
