@@ -103,5 +103,102 @@ namespace Covid19TemperatureAPI.Controllers
         }
 
 
+        /// <summary>
+        /// GetSiteDevices API. Returns all devices for the site id specified.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getsitedevices
+        ///     {
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "res": [
+        ///             {
+        ///                 "buildingId": 1,
+        ///                 "buildingName": "750, Chai Chee Road",
+        ///                 "floorId": 1,
+        ///                 "floorNumber": "3",
+        ///                 "floorDetails": "OBS Office",
+        ///                 "gateId": 1,
+        ///                 "gateNumber": "1",
+        ///                 "deviceId": "1234567890",
+        ///                 "deviceDetails": "Test device"
+        ///             },
+        ///             {
+        ///                 ...
+        ///             }
+        ///             ...
+        ///         ]
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+        [HttpPost]
+        [Route("getsitedevices")]
+        public ActionResult GetSiteDevices([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetSiteDevices() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+
+                var devices = from a in Context.Buildings
+                          join b in Context.Floors on a.BuildingId equals b.BuildingId
+                          join c in Context.Gates on b.FloorId equals c.FloorId
+                          join d in Context.Devices on c.GateId equals d.GateId
+                          where a.SiteId == nSiteId
+                          select new
+                          {
+                              a.BuildingId,
+                              a.BuildingName,
+                              b.FloorId,
+                              b.FloorNumber,
+                              b.FloorDetails,
+                              c.GateId,
+                              c.GateNumber,
+                              d.DeviceId,
+                              d.DeviceDetails
+                          };
+
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    devices
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
