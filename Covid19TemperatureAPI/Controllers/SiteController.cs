@@ -219,14 +219,24 @@ namespace Covid19TemperatureAPI.Controllers
 
                 int.TryParse(received.SiteId, out int nSiteId);
 
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
+                    .Select(x => x.DeviceId)).Distinct();
 
-                var res = Sensetime.Login(Configuration["SensetimeUsername"], Configuration["SensetimePassword"], Configuration["SensetimeAccontType"]);
+                var Employees = (from a in Context.Employees
+                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID into bb
+                                 from c in bb.DefaultIfEmpty()
+                                 join d in Context.MaskRecords on a.UID equals d.PersonUID into dd
+                                 from e in dd.DefaultIfEmpty()
+                                 where (devices.Contains(c.DeviceId) && c.Timestamp.Date == DateTime.Today)
+                                 || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
+                                 select new { a.EmployeeId }).Distinct().Count();
 
                 return new JsonResult(new
                 {
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
-                    res
+                    Employees
                 });
             }
             catch (Exception e)
