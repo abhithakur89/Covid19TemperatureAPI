@@ -76,6 +76,13 @@ namespace Covid19TemperatureAPI.SignalRHub
                     .Select(x => x.ConfigValue)
                     .FirstOrDefault();
 
+                // Get SMS sender
+                string smsSender = DbContext.Configurations
+                    .Where(x => x.ConfigKey == "SMSSender")
+                    .Select(x => x.ConfigValue)
+                    .FirstOrDefault();
+
+
                 // Get mobile numbers for this site 
                 var v = from a in DbContext.Devices
                                     join b in DbContext.Gates on a.GateId equals b.GateId
@@ -97,7 +104,7 @@ namespace Covid19TemperatureAPI.SignalRHub
 
                     SMSSender.SendSMS(ApiKey: Configuration["NexmmoApiKey"],
                         ApiSecret: Configuration["NexmoApiSecret"],
-                        from: Configuration["SMSSender"],
+                        from: smsSender,
                         to: v1.MobileNumber,
                         msg: body);
                 }
