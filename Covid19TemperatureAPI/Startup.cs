@@ -40,6 +40,18 @@ namespace Covid19TemperatureAPI
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            services.AddCors(
+                options => options.AddPolicy("AllowCors",
+                    builder_ =>
+                    {
+                        builder_
+                            .AllowAnyOrigin()
+                            .AllowCredentials()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    })
+            );
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddSignalR();
@@ -107,6 +119,7 @@ namespace Covid19TemperatureAPI
             app.UseAuthentication();
             app.UseIdentityServer();
 
+            app.UseCors("AllowCors");
             app.UseSignalR(routes =>
             {
                 routes.MapHub<Covid19Hub>(Configuration["SignalRHubRelativeUrl"]);
