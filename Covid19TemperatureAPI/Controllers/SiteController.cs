@@ -232,6 +232,8 @@ namespace Covid19TemperatureAPI.Controllers
                                  || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
                                  select new { a.EmployeeId }).Distinct().Count();
 
+                //var Visitors = 
+
                 return new JsonResult(new
                 {
                     respcode = ResponseCodes.Successful,

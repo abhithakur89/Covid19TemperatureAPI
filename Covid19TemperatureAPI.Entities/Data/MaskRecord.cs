@@ -28,5 +28,9 @@ namespace Covid19TemperatureAPI.Entities.Data
 
         public string ImagePath { get; set; }
 
+        public string IC { get; set; }
+        public string Mobile { get; set; }
+
+
     }
 }
