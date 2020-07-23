@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Covid19TemperatureAPI.Controllers
 {
-    [Route("c19server/getallsites")]
+    [Route("c19server")]
     [ApiController]
     [Authorize(AuthenticationSchemes = "Bearer")]
     public class SiteController : ControllerBase
@@ -71,7 +71,8 @@ namespace Covid19TemperatureAPI.Controllers
         /// <returns>
         /// </returns>
         [HttpPost]
-        public async Task<ActionResult> GetAllSites()
+        [Route("getallsites")]
+        public ActionResult GetAllSites()
         {
             try
             {
