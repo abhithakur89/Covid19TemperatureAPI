@@ -121,7 +121,7 @@ namespace Covid19TemperatureAPI.SignalRHub
 
             if (notifiationMsgRecieved.Notification == Configuration["NoMaskPolicyName"])
             {
-                await Clients.All.ReceiveMessage(Configuration["TemperatureEventNotificationString"]);
+                await Clients.All.ReceiveMessage(Configuration["NoMaskAlertNotificationString"]);
             }
         }
     }
