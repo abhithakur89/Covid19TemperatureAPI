@@ -263,7 +263,147 @@ namespace Covid19TemperatureAPI.Controllers
                                  select new { a.EmployeeId }).Distinct().Count();
 
                 var visitorsInTemperatureTable = (Context.TemperatureRecords
-                    .Where(x => x.PersonUID == "0"
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var visitorsInMaskTable = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var Visitors = visitorsInTemperatureTable.Concat(visitorsInMaskTable)
+                    .Distinct().Count();
+
+                // Temperature Threshold
+                decimal thresholdTemperature = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                // Count Temperature Alerts. First count employees alerts
+                int employeeTemperatureAlerts = (from a in Context.Employees
+                                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID
+                                                 where b.Temperature > thresholdTemperature
+                                                 && devices.Contains(b.DeviceId)
+                                                 && b.Timestamp.Date == DateTime.Today
+                                                 select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor temperature alerts
+                int visitorTemperatureAlerts = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && x.Temperature > thresholdTemperature
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int AbnormalTemperatureAlerts = employeeTemperatureAlerts + visitorTemperatureAlerts;
+
+                // Count Mask Alerts. First count employees alerts
+                int employeeMaskAlerts = (from a in Context.Employees
+                                          join b in Context.MaskRecords on a.UID equals b.PersonUID
+                                          where b.MaskValue == ConfigReader.NoMaskValue
+                                          && b.Timestamp.Date == DateTime.Today
+                                          && devices.Contains(b.DeviceId)
+                                          select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor mask alerts
+                int visitorMaskAlerts = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today 
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int NoMaskAlerts = employeeMaskAlerts + visitorMaskAlerts;
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    Employees,
+                    Visitors,
+                    Alerts = AbnormalTemperatureAlerts + NoMaskAlerts,
+                    AbnormalTemperatureAlerts,
+                    NoMaskAlerts
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// GetBuildingSummary API. Returns the summary for the building.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getbuildingsummary
+        ///     {
+        ///         "buildingid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "employees": 2,
+        ///         "visitors": 4,
+        ///         "alerts": 6,
+        ///         "abnormalTemperatureAlerts": 3,
+        ///         "noMaskAlerts": 3
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getbuildingsummary")]
+        public ActionResult GetBuildingSummary([FromBody]JObject jbuildingid)
+        {
+            try
+            {
+                _logger.LogInformation("GetBuildingSummary() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { BuildingId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jbuildingid.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.BuildingId}");
+
+                int.TryParse(received.BuildingId, out int nBuildingId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.BuildingId == nBuildingId)
+                    .Select(x => x.DeviceId)).Distinct();
+                
+                var Employees = (from a in Context.Employees
+                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID into bb
+                                 from c in bb.DefaultIfEmpty()
+                                 join d in Context.MaskRecords on a.UID equals d.PersonUID into dd
+                                 from e in dd.DefaultIfEmpty()
+                                 where (devices.Contains(c.DeviceId) && c.Timestamp.Date == DateTime.Today)
+                                 || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
+                                 select new { a.EmployeeId }).Distinct().Count();
+                
+                var visitorsInTemperatureTable = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
                     && x.Timestamp.Date == DateTime.Today
                     && devices.Contains(x.DeviceId)
                     && !string.IsNullOrEmpty(x.Mobile))
@@ -287,6 +427,7 @@ namespace Covid19TemperatureAPI.Controllers
                                                  join b in Context.TemperatureRecords on a.UID equals b.PersonUID
                                                  where b.Temperature > thresholdTemperature
                                                  && b.Timestamp.Date == DateTime.Today
+                                                 && devices.Contains(b.DeviceId)
                                                  select new { a.EmployeeId }).Distinct().Count();
 
                 // Count Visitor temperature alerts
@@ -294,6 +435,7 @@ namespace Covid19TemperatureAPI.Controllers
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
                         && x.Timestamp.Date == DateTime.Today
                         && x.Temperature > thresholdTemperature
+                        && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
 
@@ -303,13 +445,295 @@ namespace Covid19TemperatureAPI.Controllers
                 int employeeMaskAlerts = (from a in Context.Employees
                                           join b in Context.MaskRecords on a.UID equals b.PersonUID
                                           where b.MaskValue == ConfigReader.NoMaskValue
+                                          && devices.Contains(b.DeviceId)
+                                          && b.Timestamp.Date == DateTime.Today
+                                          select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor mask alerts
+                var visitorMaskAlerts = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int NoMaskAlerts = employeeMaskAlerts + visitorMaskAlerts;
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    Employees,
+                    Visitors,
+                    Alerts = AbnormalTemperatureAlerts + NoMaskAlerts,
+                    AbnormalTemperatureAlerts,
+                    NoMaskAlerts
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// GetFloorSummary API. Returns the summary for the floor.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getfloorsummary
+        ///     {
+        ///         "floorid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "employees": 2,
+        ///         "visitors": 4,
+        ///         "alerts": 6,
+        ///         "abnormalTemperatureAlerts": 3,
+        ///         "noMaskAlerts": 3
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getfloorsummary")]
+        public ActionResult GetFloorSummary([FromBody]JObject jfloorid)
+        {
+            try
+            {
+                _logger.LogInformation("GetFloorSummary() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { FloorId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jfloorid.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.FloorId}");
+
+                int.TryParse(received.FloorId, out int nFloorId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.FloorId == nFloorId)
+                    .Select(x => x.DeviceId)).Distinct();
+                
+                var Employees = (from a in Context.Employees
+                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID into bb
+                                 from c in bb.DefaultIfEmpty()
+                                 join d in Context.MaskRecords on a.UID equals d.PersonUID into dd
+                                 from e in dd.DefaultIfEmpty()
+                                 where (devices.Contains(c.DeviceId) && c.Timestamp.Date == DateTime.Today)
+                                 || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
+                                 select new { a.EmployeeId }).Distinct().Count();
+                
+                var visitorsInTemperatureTable = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var visitorsInMaskTable = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var Visitors = visitorsInTemperatureTable.Concat(visitorsInMaskTable)
+                    .Distinct().Count();
+
+                // Temperature Threshold
+                decimal thresholdTemperature = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                // Count Temperature Alerts. First count employees alerts
+                int employeeTemperatureAlerts = (from a in Context.Employees
+                                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID
+                                                 where b.Temperature > thresholdTemperature
+                                                 && b.Timestamp.Date == DateTime.Today
+                                                 && devices.Contains(b.DeviceId)
+                                                 select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor temperature alerts
+                int visitorTemperatureAlerts = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && x.Temperature > thresholdTemperature
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int AbnormalTemperatureAlerts = employeeTemperatureAlerts + visitorTemperatureAlerts;
+
+                // Count Mask Alerts. First count employees alerts
+                int employeeMaskAlerts = (from a in Context.Employees
+                                          join b in Context.MaskRecords on a.UID equals b.PersonUID
+                                          where b.MaskValue == ConfigReader.NoMaskValue
+                                          && devices.Contains(b.DeviceId)
                                           && b.Timestamp.Date == DateTime.Today
                                           select new { a.EmployeeId }).Distinct().Count();
 
                 // Count Visitor mask alerts
                 int visitorMaskAlerts = (Context.MaskRecords
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
-                        && x.Timestamp.Date == DateTime.Today 
+                        && x.Timestamp.Date == DateTime.Today
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int NoMaskAlerts = employeeMaskAlerts + visitorMaskAlerts;
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    Employees,
+                    Visitors,
+                    Alerts = AbnormalTemperatureAlerts + NoMaskAlerts,
+                    AbnormalTemperatureAlerts,
+                    NoMaskAlerts
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// GetGateSummary API. Returns the summary for the gate.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getgatesummary
+        ///     {
+        ///         "gateid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "employees": 2,
+        ///         "visitors": 4,
+        ///         "alerts": 6,
+        ///         "abnormalTemperatureAlerts": 3,
+        ///         "noMaskAlerts": 3
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getgatesummary")]
+        public ActionResult GetGateSummary([FromBody]JObject jgateid)
+        {
+            try
+            {
+                _logger.LogInformation("GetGateSummary() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { GateId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jgateid.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.GateId}");
+
+                int.TryParse(received.GateId, out int nGateId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.GateId == nGateId)
+                    .Select(x => x.DeviceId)).Distinct();
+
+                var Employees = (from a in Context.Employees
+                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID into bb
+                                 from c in bb.DefaultIfEmpty()
+                                 join d in Context.MaskRecords on a.UID equals d.PersonUID into dd
+                                 from e in dd.DefaultIfEmpty()
+                                 where (devices.Contains(c.DeviceId) && c.Timestamp.Date == DateTime.Today)
+                                 || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
+                                 select new { a.EmployeeId }).Distinct().Count();
+
+                var visitorsInTemperatureTable = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var visitorsInMaskTable = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var Visitors = visitorsInTemperatureTable.Concat(visitorsInMaskTable)
+                    .Distinct().Count();
+
+                // Temperature Threshold
+                decimal thresholdTemperature = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                // Count Temperature Alerts. First count employees alerts
+                int employeeTemperatureAlerts = (from a in Context.Employees
+                                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID
+                                                 where b.Temperature > thresholdTemperature
+                                                 && b.Timestamp.Date == DateTime.Today
+                                                 && devices.Contains(b.DeviceId)
+                                                 select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor temperature alerts
+                int visitorTemperatureAlerts = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && x.Temperature > thresholdTemperature
+                        && devices.Contains(x.DeviceId)
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int AbnormalTemperatureAlerts = employeeTemperatureAlerts + visitorTemperatureAlerts;
+
+                // Count Mask Alerts. First count employees alerts
+                int employeeMaskAlerts = (from a in Context.Employees
+                                          join b in Context.MaskRecords on a.UID equals b.PersonUID
+                                          where b.MaskValue == ConfigReader.NoMaskValue
+                                          && devices.Contains(b.DeviceId)
+                                          && b.Timestamp.Date == DateTime.Today
+                                          select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor mask alerts
+                int visitorMaskAlerts = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
 
