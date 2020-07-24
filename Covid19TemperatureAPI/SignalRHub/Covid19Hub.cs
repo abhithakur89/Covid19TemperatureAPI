@@ -1,4 +1,5 @@
 ﻿using Covid19TemperatureAPI.Entities.Data;
+using Covid19TemperatureAPI.Helper;
 using Covid19TemperatureAPI.Mobile;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
@@ -44,17 +45,12 @@ namespace Covid19TemperatureAPI.SignalRHub
             if (notifiationMsgRecieved.Notification == Configuration["TemperaturePolicyName"])
             {
                 // Get Config setting for temperature threshold
-                bool res = decimal.TryParse(DbContext.Configurations
-                    .Where(x => x.ConfigKey == "TemperatureThreshold")
-                    .Select(x => x.ConfigValue).FirstOrDefault(), out decimal thresholdTemperature);
-
-                if(!res)
-                    decimal.TryParse(Configuration["DefaultTemperatureThreshold"], out thresholdTemperature);
+                decimal thresholdTemperature = ConfigReader.GetTemperatureThreshold(DbContext, Configuration);
 
                 // Parse received teperature
-                res = decimal.TryParse(notifiationMsgRecieved.Value, out decimal receivedTeperature);
+                bool res = decimal.TryParse(notifiationMsgRecieved.Value, out decimal receivedTeperature);
 
-                if(res)
+                if (res)
                 {
                     // Check threshold
                     if(receivedTeperature>= thresholdTemperature)
@@ -64,23 +60,14 @@ namespace Covid19TemperatureAPI.SignalRHub
 
                         #region SMS
                         // Notify SMS
-                        var sendAlertSMSConfig = DbContext.Configurations
-                            .Where(x => x.ConfigKey == "SendAlertSMS")
-                            .Select(x => x.ConfigValue)
-                            .FirstOrDefault();
-                        if(sendAlertSMSConfig=="1")
+                        var sendAlertSMSConfig = ConfigReader.GetSendAlertSMSEnabled(DbContext, Configuration);
+                        if(sendAlertSMSConfig)
                         {
                             // Prepare SMS
-                            string smsBody = DbContext.Configurations
-                                .Where(x => x.ConfigKey == "TemperatureAlertHeader")
-                                .Select(x => x.ConfigValue)
-                                .FirstOrDefault();
+                            string smsBody = ConfigReader.GetTemperatureAlertHeader(DbContext, Configuration);
 
                             // Get SMS sender
-                            string smsSender = DbContext.Configurations
-                                .Where(x => x.ConfigKey == "SMSSender")
-                                .Select(x => x.ConfigValue)
-                                .FirstOrDefault();
+                            string smsSender = ConfigReader.GetSMSSender(DbContext, Configuration);
 
                             // Get mobile numbers for this site 
                             var v = from a in DbContext.Devices

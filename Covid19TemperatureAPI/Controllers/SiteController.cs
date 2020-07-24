@@ -203,6 +203,36 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GetSiteSummary API. Returns the summary for the site.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getsitesummary
+        ///     {
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "employees": 2,
+        ///         "visitors": 4,
+        ///         "alerts": 6,
+        ///         "abnormalTemperatureAlerts": 3,
+        ///         "noMaskAlerts": 3
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
         [HttpPost]
         [Route("getsitesummary")]
         public ActionResult GetSiteSummary([FromBody]JObject jsiteId)
@@ -232,13 +262,68 @@ namespace Covid19TemperatureAPI.Controllers
                                  || (devices.Contains(e.DeviceId) && e.Timestamp.Date == DateTime.Today)
                                  select new { a.EmployeeId }).Distinct().Count();
 
-                //var Visitors = 
+                var visitorsInTemperatureTable = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == "0"
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var visitorsInMaskTable = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                    && x.Timestamp.Date == DateTime.Today
+                    && devices.Contains(x.DeviceId)
+                    && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct();
+
+                var Visitors = visitorsInTemperatureTable.Concat(visitorsInMaskTable)
+                    .Distinct().Count();
+
+                // Temperature Threshold
+                decimal thresholdTemperature = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                // Count Temperature Alerts. First count employees alerts
+                int employeeTemperatureAlerts = (from a in Context.Employees
+                                                 join b in Context.TemperatureRecords on a.UID equals b.PersonUID
+                                                 where b.Temperature > thresholdTemperature
+                                                 && b.Timestamp.Date == DateTime.Today
+                                                 select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor temperature alerts
+                int visitorTemperatureAlerts = (Context.TemperatureRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today
+                        && x.Temperature > thresholdTemperature
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int AbnormalTemperatureAlerts = employeeTemperatureAlerts + visitorTemperatureAlerts;
+
+                // Count Mask Alerts. First count employees alerts
+                int employeeMaskAlerts = (from a in Context.Employees
+                                          join b in Context.MaskRecords on a.UID equals b.PersonUID
+                                          where b.MaskValue == ConfigReader.NoMaskValue
+                                          && b.Timestamp.Date == DateTime.Today
+                                          select new { a.EmployeeId }).Distinct().Count();
+
+                // Count Visitor mask alerts
+                int visitorMaskAlerts = (Context.MaskRecords
+                    .Where(x => x.PersonUID == ConfigReader.VisitorUID
+                        && x.Timestamp.Date == DateTime.Today 
+                        && !string.IsNullOrEmpty(x.Mobile))
+                    .Select(x => x.Mobile)).Distinct().Count();
+
+                int NoMaskAlerts = employeeMaskAlerts + visitorMaskAlerts;
 
                 return new JsonResult(new
                 {
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
-                    Employees
+                    Employees,
+                    Visitors,
+                    Alerts = AbnormalTemperatureAlerts + NoMaskAlerts,
+                    AbnormalTemperatureAlerts,
+                    NoMaskAlerts
                 });
             }
             catch (Exception e)
