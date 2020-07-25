@@ -881,9 +881,9 @@ namespace Covid19TemperatureAPI.Controllers
                                         a.Temperature,
                                         //MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
                                         Mask = c != null ? false : true,   // false means no mask
-                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        DateTime = a.Timestamp.Remove(a.Timestamp.Length - 8),
                                         //Image =  a.ImagePath.ConvertImageUrlToBase64().Result,
-                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        Captured = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
                                         //a.IC,
                                         //a.Mobile
                                     };
@@ -900,15 +900,15 @@ namespace Covid19TemperatureAPI.Controllers
                                          a.Location,
                                          Temperature = c != null ? c.Temperature.ToString() : string.Empty,
                                          a.Mask,
-                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         DateTime = a.Timestamp.Remove(a.Timestamp.Length - 8),
                                          //Image = a.ImagePath.ConvertImageUrlToBase64().Result,
-                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         Captured = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
                                          //a.IC,
                                          //a.Mobile
                                      };
 
                 var entranceLogForToday = from a in leftOuterJoin.Union(rightOuterJoin)
-                                    orderby a.Timestamp descending
+                                    orderby a.DateTime descending
                                     select a;
 
 
