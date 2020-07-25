@@ -171,7 +171,12 @@ namespace Covid19TemperatureAPI
             certificateSecret.Wait();
             var privateKeyBytes = Convert.FromBase64String(certificateSecret.Result.Value);
 
-            var certificate = new X509Certificate2(privateKeyBytes, (string)null);
+            //var certificate = new X509Certificate2(privateKeyBytes, (string)null);
+
+            var certificate = new X509Certificate2(privateKeyBytes, (string)null,
+                X509KeyStorageFlags.MachineKeySet
+                | X509KeyStorageFlags.PersistKeySet
+                | X509KeyStorageFlags.Exportable);
 
             return certificate;
         }
