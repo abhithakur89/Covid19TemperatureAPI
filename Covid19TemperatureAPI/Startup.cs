@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using Covid19TemperatureAPI.Entities.Data;
 using Covid19TemperatureAPI.Entities.Models;
 using Covid19TemperatureAPI.SenseTime;
@@ -13,9 +14,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.KeyVault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace Covid19TemperatureAPI
@@ -65,8 +68,18 @@ namespace Covid19TemperatureAPI
                 options.Events.RaiseInformationEvents = true;
                 options.Events.RaiseFailureEvents = true;
                 options.Events.RaiseSuccessEvents = true;
-            })
-                .AddDeveloperSigningCredential()
+            });
+
+            if(Configuration["EnableCertificateForIdentityServer"]=="1")
+            {
+                builder = builder.AddSigningCredential(GetIdentityServerCertifiateAsync());
+            }
+            else
+            {
+                builder = builder.AddDeveloperSigningCredential();
+            }
+
+            builder = builder
                 .AddInMemoryApiResources(Config.GetApis(Configuration["APIName"], Configuration["ClientSecret"]))
                 .AddInMemoryClients(Config.GetClients(Configuration["APIClientId"], Configuration["ClientSecret"], Configuration["APIName"]))
                 .AddAspNetIdentity<ApplicationUser>();
@@ -132,6 +145,35 @@ namespace Covid19TemperatureAPI
             app.UseMvcWithDefaultRoute();
             //app.UseHttpsRedirection();
             //app.UseMvc();
+        }
+
+        private X509Certificate2 GetIdentityServerCertifiateAsync()
+        {
+            var clientId = Configuration["ClientIdForKeyVault"];
+            var clientSecret = Configuration["ClientSecretForKeyVault"];
+
+            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(async (authority, resource, scope) =>
+            {
+                var authContext = new AuthenticationContext(authority);
+                ClientCredential clientCreds = new ClientCredential(clientId, clientSecret);
+
+                AuthenticationResult result = await authContext.AcquireTokenAsync(resource, clientCreds);
+
+                if (result == null)
+                {
+                    throw new InvalidOperationException("Failed to obtaint the token");
+                }
+
+                return result.AccessToken;
+            }));
+
+            var certificateSecret = keyVaultClient.GetSecretAsync(Configuration["KeyVaultUrl"], Configuration["IdentityServerCertificate"]);
+            certificateSecret.Wait();
+            var privateKeyBytes = Convert.FromBase64String(certificateSecret.Result.Value);
+
+            var certificate = new X509Certificate2(privateKeyBytes, (string)null);
+
+            return certificate;
         }
     }
 }

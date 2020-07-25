@@ -27,6 +27,11 @@ namespace Covid19TemperatureAPI
             .ConfigureAppConfiguration((context, config) =>
             {
                 var builtConfig = config.Build();
+                config.AddAzureKeyVault(
+                        builtConfig["KeyVaultUrl"],
+                        builtConfig["ClientIdForKeyVault"],
+                        builtConfig["ClientSecretForKeyVault"]
+                        );
             })
                 .UseStartup<Startup>();
     }
