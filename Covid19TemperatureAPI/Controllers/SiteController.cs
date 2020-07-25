@@ -763,5 +763,129 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+
+        [HttpPost]
+        [Route("getentrancelogfortoday")]
+        public ActionResult GetEntranceLogForToday([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetEntranceLogForToday() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
+                    .Select(x => x.DeviceId)).Distinct();
+
+                var temperatureTimestamps = (Context.TemperatureRecords
+                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                    .GroupBy(x => x.ImagePath)
+                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+
+                var maskTimestamps = (Context.MaskRecords
+                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                    .GroupBy(x => x.ImagePath)
+                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+
+                var temperatureRecords = (from a in Context.TemperatureRecords
+                                          join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          select new
+                                          {
+                                              a.PersonUID,
+                                              a.PersonName,
+                                              a.DeviceId,
+                                              a.Device.Gate.GateNumber,
+                                              Gate = a.Device.Gate.AdditionalDetails,
+                                              Temperature = a.Temperature.ToString(),
+                                              Timestamp = a.Timestamp.ToString(),
+                                              a.ImagePath,
+                                              a.IC,
+                                              a.Mobile
+                                          }).Distinct();
+
+                var maskRecords = (from a in Context.MaskRecords
+                                   join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   select new
+                                   {
+                                       a.PersonUID,
+                                       a.PersonName,
+                                       a.DeviceId,
+                                       a.Device.Gate.GateNumber,
+                                       Gate = a.Device.Gate.AdditionalDetails,
+                                       MaskValue = a.MaskValue.ToString(),
+                                       Timestamp = a.Timestamp.ToString(),
+                                       a.ImagePath,
+                                       a.IC,
+                                       a.Mobile
+                                   }).Distinct();
+
+                var leftOuterJoin = from a in temperatureRecords
+                                    join b in maskRecords on a.Timestamp equals b.Timestamp into bb
+                                    from c in bb.DefaultIfEmpty()
+                                    select new
+                                    {
+                                        a.PersonUID,
+                                        a.PersonName,
+                                        a.DeviceId,
+                                        a.GateNumber,
+                                        a.Gate,
+                                        a.Temperature,
+                                        MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
+                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        a.ImagePath,
+                                        a.IC,
+                                        a.Mobile
+                                    };
+
+                var rightOuterJoin = from a in maskRecords
+                                     join b in temperatureRecords on a.Timestamp equals b.Timestamp into bb
+                                     from c in bb.DefaultIfEmpty()
+                                     select new
+                                     {
+                                         a.PersonUID,
+                                         a.PersonName,
+                                         a.DeviceId,
+                                         a.GateNumber,
+                                         a.Gate,
+                                         Temperature = c != null ? c.Temperature.ToString() : string.Empty,
+                                         a.MaskValue,
+                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         a.ImagePath,
+                                         a.IC,
+                                         a.Mobile
+                                     };
+
+                var fullOuterJoin = from a in leftOuterJoin.Union(rightOuterJoin)
+                                    orderby a.Timestamp descending
+                                    select a;
+
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    fullOuterJoin
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
