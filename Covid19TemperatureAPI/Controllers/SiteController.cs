@@ -763,6 +763,45 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GetEntranceLogForToday API. Returns the  Entrance log for Today.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getentrancelogfortoday
+        ///     {
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "entranceLogForToday": [
+        ///             {
+        ///                 "visitor": false,
+        ///                 "person": "Abhishek",
+        ///                 "location": "Floor 3 Reception Gate",
+        ///                 "temperature": "36.7",
+        ///                 "mask": false,
+        ///                 "timestamp": "2020-07-25 23:13:44",
+        ///                 "image": "data:image/jpeg;base64,/9j/4AA...SQT/9k="
+        ///             },
+        ///             {
+        ///                 ...
+        ///             }
+        ///             ...
+        ///         ]
+        ///     }        
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
 
         [HttpPost]
         [Route("getentrancelogfortoday")]
@@ -800,14 +839,15 @@ namespace Covid19TemperatureAPI.Controllers
                                           {
                                               a.PersonUID,
                                               a.PersonName,
-                                              a.DeviceId,
-                                              a.Device.Gate.GateNumber,
-                                              Gate = a.Device.Gate.AdditionalDetails,
-                                              Temperature = a.Temperature.ToString(),
+                                              //a.DeviceId,
+                                              //a.Device.Gate.GateNumber,
+                                              Location = a.Device.Gate.AdditionalDetails,
+                                              Temperature = a.Temperature.ToString("#.#"),
                                               Timestamp = a.Timestamp.ToString(),
                                               a.ImagePath,
-                                              a.IC,
-                                              a.Mobile
+                                              a.ImageBase64,
+                                              //a.IC,
+                                              //a.Mobile
                                           }).Distinct();
 
                 var maskRecords = (from a in Context.MaskRecords
@@ -816,14 +856,16 @@ namespace Covid19TemperatureAPI.Controllers
                                    {
                                        a.PersonUID,
                                        a.PersonName,
-                                       a.DeviceId,
-                                       a.Device.Gate.GateNumber,
-                                       Gate = a.Device.Gate.AdditionalDetails,
-                                       MaskValue = a.MaskValue.ToString(),
+                                       //a.DeviceId,
+                                       //a.Device.Gate.GateNumber,
+                                       Location = a.Device.Gate.AdditionalDetails,
+                                       //MaskValue = a.MaskValue.ToString(),
+                                       Mask = false,
                                        Timestamp = a.Timestamp.ToString(),
                                        a.ImagePath,
-                                       a.IC,
-                                       a.Mobile
+                                       a.ImageBase64,
+                                       //a.IC,
+                                       //a.Mobile
                                    }).Distinct();
 
                 var leftOuterJoin = from a in temperatureRecords
@@ -831,17 +873,19 @@ namespace Covid19TemperatureAPI.Controllers
                                     from c in bb.DefaultIfEmpty()
                                     select new
                                     {
-                                        a.PersonUID,
-                                        a.PersonName,
-                                        a.DeviceId,
-                                        a.GateNumber,
-                                        a.Gate,
+                                        Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                        Person = a.PersonName,
+                                        //a.DeviceId,
+                                        //a.GateNumber,
+                                        a.Location,
                                         a.Temperature,
-                                        MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
+                                        //MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
+                                        Mask = c != null ? false : true,   // false means no mask
                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
-                                        Image = a.ImagePath.ConvertImageUrlToBase64().Result,
-                                        a.IC,
-                                        a.Mobile
+                                        //Image =  a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        //a.IC,
+                                        //a.Mobile
                                     };
 
                 var rightOuterJoin = from a in maskRecords
@@ -849,20 +893,21 @@ namespace Covid19TemperatureAPI.Controllers
                                      from c in bb.DefaultIfEmpty()
                                      select new
                                      {
-                                         a.PersonUID,
-                                         a.PersonName,
-                                         a.DeviceId,
-                                         a.GateNumber,
-                                         a.Gate,
+                                         Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                         Person = a.PersonName,
+                                         //a.DeviceId,
+                                         //a.GateNumber,
+                                         a.Location,
                                          Temperature = c != null ? c.Temperature.ToString() : string.Empty,
-                                         a.MaskValue,
+                                         a.Mask,
                                          Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
-                                         Image = a.ImagePath.ConvertImageUrlToBase64().Result,
-                                         a.IC,
-                                         a.Mobile
+                                         //Image = a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         //a.IC,
+                                         //a.Mobile
                                      };
 
-                var fullOuterJoin = from a in leftOuterJoin.Union(rightOuterJoin)
+                var entranceLogForToday = from a in leftOuterJoin.Union(rightOuterJoin)
                                     orderby a.Timestamp descending
                                     select a;
 
@@ -871,7 +916,7 @@ namespace Covid19TemperatureAPI.Controllers
                 {
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
-                    fullOuterJoin
+                    entranceLogForToday
                 });
             }
             catch (Exception e)
