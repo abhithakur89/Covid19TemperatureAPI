@@ -31,6 +31,6 @@ namespace Covid19TemperatureAPI.Entities.Data
         public string IC { get; set; }
         public string Mobile { get; set; }
 
-
+        public string ImageBase64 { get; set; }
     }
 }

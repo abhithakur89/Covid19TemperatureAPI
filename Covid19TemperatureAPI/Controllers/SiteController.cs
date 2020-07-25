@@ -839,7 +839,7 @@ namespace Covid19TemperatureAPI.Controllers
                                         a.Temperature,
                                         MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
-                                        a.ImagePath,
+                                        Image = a.ImagePath.ConvertImageUrlToBase64().Result,
                                         a.IC,
                                         a.Mobile
                                     };
@@ -857,7 +857,7 @@ namespace Covid19TemperatureAPI.Controllers
                                          Temperature = c != null ? c.Temperature.ToString() : string.Empty,
                                          a.MaskValue,
                                          Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
-                                         a.ImagePath,
+                                         Image = a.ImagePath.ConvertImageUrlToBase64().Result,
                                          a.IC,
                                          a.Mobile
                                      };
