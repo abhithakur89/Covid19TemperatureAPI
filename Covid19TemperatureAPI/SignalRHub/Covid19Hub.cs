@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace Covid19TemperatureAPI.SignalRHub
@@ -90,17 +92,88 @@ namespace Covid19TemperatureAPI.SignalRHub
                                     $"Gate - {v1.GateNumber}\n" +
                                     $"Time - {Convert.ToDateTime(notifiationMsgRecieved.Timestamp).ToString("MMMM dd hh:mm tt")}";
 
-                                SMSSender.SendSMS(ApiKey: Configuration["NexmmoApiKey"],
-                                    ApiSecret: Configuration["NexmoApiSecret"],
-                                    from: smsSender,
-                                    to: v1.MobileNumber,
-                                    msg: body);
+                                try
+                                {
+                                    SMSSender.SendSMS(ApiKey: Configuration["NexmmoApiKey"],
+                                        ApiSecret: Configuration["NexmoApiSecret"],
+                                        from: smsSender,
+                                        to: v1.MobileNumber,
+                                        msg: body);
+                                }
+                                catch(Exception e)
+                                {
+                                    _logger.LogError($"Error sending SMS to {v1.MobileNumber}. Error: {e.Message}");
+                                }
                             }
                         }
                         #endregion
-                        // Notify Email
-                        // ...
+
+                        #region Email
+                        // Notify email
+                        var sendAlertEmailConfig = ConfigReader.GetSendAlertEmailEnabled(DbContext, Configuration);
+                        if (sendAlertEmailConfig)
+                        {
+                            var fromAddress = new MailAddress(Configuration["EmailSenderId"], 
+                                ConfigReader.GetEmailSenderName(DbContext, Configuration));
+
+                            string fromPassword = Configuration["EmailSenderPassword"];
+
+                            // Prepare Email
+                            string emailSubject = ConfigReader.GetTemperatureAlertEmailSubject(DbContext, Configuration);
+
+                            // Get Email addresses for this site 
+                            var v = from a in DbContext.Devices
+                                    join b in DbContext.Gates on a.GateId equals b.GateId
+                                    join c in DbContext.EmailAddresses on b.Floor.Building.SiteId equals c.SiteId
+                                    where a.DeviceId == notifiationMsgRecieved.DeviceId
+                                    select new
+                                    {
+                                        c.EmailId,
+                                        c.Name,
+                                        b.Floor.Building.BuildingName,
+                                        b.GateNumber
+                                    };
+
+                            // Send Email 
+                            foreach (var v1 in v)
+                            {
+                                var body = $"\nName - {notifiationMsgRecieved.PersonName}\n" +
+                                    $"Temperature - {notifiationMsgRecieved.Value}\n" +
+                                    $"Building - {v1.BuildingName}\n" +
+                                    $"Gate - {v1.GateNumber}\n" +
+                                    $"Time - {Convert.ToDateTime(notifiationMsgRecieved.Timestamp).ToString("MMMM dd hh:mm tt")}";
+
+                                var smtp = new SmtpClient
+                                {
+                                    Host = Configuration["SMTPHost"],
+                                    Port = Convert.ToInt32(Configuration["SMTPPort"]),
+                                    EnableSsl = true,
+                                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                                    UseDefaultCredentials = false,
+                                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
+                                };
+
+                                var toAddress = new MailAddress(v1.EmailId, v1.Name);
+
+                                using (var mailMessage = new MailMessage(fromAddress, toAddress)
+                                {
+                                    Subject = emailSubject,
+                                    Body = body
+                                })
+                                {
+                                    try
+                                    {
+                                        smtp.Send(mailMessage);
+                                    }
+                                    catch(Exception e)
+                                    {
+                                        _logger.LogError($"Error while sending email: {v1.EmailId}. Error: {e.Message}");
+                                    }
+                                }
+                            }
+                        }
                     }
+                    #endregion
                 }
 
                 await Clients.All.ReceiveMessage(Configuration["TemperatureEventNotificationString"]);

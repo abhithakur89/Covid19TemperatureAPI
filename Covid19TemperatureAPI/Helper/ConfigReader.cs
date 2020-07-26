@@ -11,8 +11,12 @@ namespace Covid19TemperatureAPI.Helper
     {
         const string DefaultTemperatureThresholdConfig = "DefaultTemperatureThreshold";
         const string DefaultTemperatureAlertHeaderConfig = "DefaultTemperatureAlertHeader";
+
         const string DefaultSendAlertSMSConfig = "DefaultSendAlertSMSEnabled";
         const string DefaultSMSSenderConfig = "DefaultSMSSender";
+
+        const string DefaultSendAlertEmailConfig = "DefaultSendAlertEmailEnabled";
+        const string DefaultEmailSenderConfig = "DefaultEmailSenderName";
 
         public const string VisitorUID = "0";
         public const int NoMaskValue = 2;
@@ -41,6 +45,19 @@ namespace Covid19TemperatureAPI.Helper
             return res;
         }
 
+        public static string GetTemperatureAlertEmailSubject(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "TemperatureAlertEmailSubject")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+                res = Configuration[DefaultTemperatureAlertHeaderConfig];
+
+            return res;
+        }
+
+
         public static bool GetSendAlertSMSEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             string res = DbContext.Configurations
@@ -58,6 +75,23 @@ namespace Covid19TemperatureAPI.Helper
             return false;
         }
 
+        public static bool GetSendAlertEmailEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SendAlertEmail")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+            {
+                res = Configuration[DefaultSendAlertEmailConfig];
+            }
+
+            if (res == "0") return false;
+            if (res == "1") return true;
+
+            return false;
+        }
+
         public static string GetSMSSender(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             string res = DbContext.Configurations
@@ -66,6 +100,18 @@ namespace Covid19TemperatureAPI.Helper
 
             if (string.IsNullOrEmpty(res))
                 res = Configuration[DefaultSMSSenderConfig];
+
+            return res;
+        }
+
+        public static string GetEmailSenderName(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "EmailSenderName")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+                res = Configuration[DefaultEmailSenderConfig];
 
             return res;
         }
