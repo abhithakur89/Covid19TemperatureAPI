@@ -12,11 +12,17 @@ namespace Covid19TemperatureAPI.Helper
         const string DefaultTemperatureThresholdConfig = "DefaultTemperatureThreshold";
         const string DefaultTemperatureAlertHeaderConfig = "DefaultTemperatureAlertHeader";
 
-        const string DefaultSendAlertSMSConfig = "DefaultSendAlertSMSEnabled";
+        const string DefaultMaskAlertHeaderConfig = "DefaultMaskAlertHeader";
+
+        const string DefaultSendAlertForTemperatureSMSConfig = "SMSAlertForTemperatureEnabled";
         const string DefaultSMSSenderConfig = "DefaultSMSSender";
 
-        const string DefaultSendAlertEmailConfig = "DefaultSendAlertEmailEnabled";
+        const string DefaultSendAlertForTemperatureEmailConfig = "EmailAlertForTemperatureEnabled";
+        const string DefaultSendAlertForMaskEmailConfig = "EmailAlertForMaskEnabled";
+
         const string DefaultEmailSenderConfig = "DefaultEmailSenderName";
+
+        const string DefaultSendAlertForMaskSMSConfig = "SMSAlertForMaskEnabled";
 
         public const string VisitorUID = "0";
         public const int NoMaskValue = 2;
@@ -45,6 +51,19 @@ namespace Covid19TemperatureAPI.Helper
             return res;
         }
 
+        public static string GetMaskAlertHeader(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "MaskAlertHeader")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+                res = Configuration[DefaultMaskAlertHeaderConfig];
+
+            return res;
+        }
+
+
         public static string GetTemperatureAlertEmailSubject(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             string res = DbContext.Configurations
@@ -57,16 +76,28 @@ namespace Covid19TemperatureAPI.Helper
             return res;
         }
 
-
-        public static bool GetSendAlertSMSEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        public static string GetMaskAlertEmailSubject(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             string res = DbContext.Configurations
-                   .Where(x => x.ConfigKey == "SendAlertSMS")
+                   .Where(x => x.ConfigKey == "MaskAlertEmailSubject")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+                res = Configuration[DefaultMaskAlertHeaderConfig];
+
+            return res;
+        }
+
+
+        public static bool GetSendAlertForTemperatureSMSEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SendSMSAlertForTemperature")
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertSMSConfig];
+                res = Configuration[DefaultSendAlertForTemperatureSMSConfig];
             }
 
             if (res == "0") return false;
@@ -75,15 +106,15 @@ namespace Covid19TemperatureAPI.Helper
             return false;
         }
 
-        public static bool GetSendAlertEmailEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        public static bool GetSendAlertForMaskSMSEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             string res = DbContext.Configurations
-                   .Where(x => x.ConfigKey == "SendAlertEmail")
+                   .Where(x => x.ConfigKey == "SendSMSAlertForMask")
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertEmailConfig];
+                res = Configuration[DefaultSendAlertForMaskSMSConfig];
             }
 
             if (res == "0") return false;
@@ -91,6 +122,42 @@ namespace Covid19TemperatureAPI.Helper
 
             return false;
         }
+
+
+        public static bool GetSendAlertForTemperatureEmailEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SendEmailAlertForTemperature")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+            {
+                res = Configuration[DefaultSendAlertForTemperatureEmailConfig];
+            }
+
+            if (res == "0") return false;
+            if (res == "1") return true;
+
+            return false;
+        }
+
+        public static bool GetSendAlertForMaskEmailEnabled(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SendEmailAlertForMask")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+            {
+                res = Configuration[DefaultSendAlertForMaskEmailConfig];
+            }
+
+            if (res == "0") return false;
+            if (res == "1") return true;
+
+            return false;
+        }
+
 
         public static string GetSMSSender(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
