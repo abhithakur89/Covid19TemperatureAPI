@@ -295,8 +295,6 @@ namespace Covid19TemperatureAPI.SignalRHub
                 }
             }
             #endregion
-
         }
-    }
     }
 }
