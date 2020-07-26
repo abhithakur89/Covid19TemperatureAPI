@@ -285,7 +285,7 @@ namespace Covid19TemperatureAPI.Controllers
                 // Count Temperature Alerts. First count employees alerts
                 int employeeTemperatureAlerts = (from a in Context.Employees
                                                  join b in Context.TemperatureRecords on a.UID equals b.PersonUID
-                                                 where b.Temperature > thresholdTemperature
+                                                 where b.Temperature >= thresholdTemperature
                                                  && devices.Contains(b.DeviceId)
                                                  && b.Timestamp.Date == DateTime.Today
                                                  select new { a.EmployeeId }).Distinct().Count();
@@ -294,7 +294,7 @@ namespace Covid19TemperatureAPI.Controllers
                 int visitorTemperatureAlerts = (Context.TemperatureRecords
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
                         && x.Timestamp.Date == DateTime.Today
-                        && x.Temperature > thresholdTemperature
+                        && x.Temperature >= thresholdTemperature
                         && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
@@ -425,7 +425,7 @@ namespace Covid19TemperatureAPI.Controllers
                 // Count Temperature Alerts. First count employees alerts
                 int employeeTemperatureAlerts = (from a in Context.Employees
                                                  join b in Context.TemperatureRecords on a.UID equals b.PersonUID
-                                                 where b.Temperature > thresholdTemperature
+                                                 where b.Temperature >= thresholdTemperature
                                                  && b.Timestamp.Date == DateTime.Today
                                                  && devices.Contains(b.DeviceId)
                                                  select new { a.EmployeeId }).Distinct().Count();
@@ -434,7 +434,7 @@ namespace Covid19TemperatureAPI.Controllers
                 int visitorTemperatureAlerts = (Context.TemperatureRecords
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
                         && x.Timestamp.Date == DateTime.Today
-                        && x.Temperature > thresholdTemperature
+                        && x.Temperature >= thresholdTemperature
                         && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
@@ -565,7 +565,7 @@ namespace Covid19TemperatureAPI.Controllers
                 // Count Temperature Alerts. First count employees alerts
                 int employeeTemperatureAlerts = (from a in Context.Employees
                                                  join b in Context.TemperatureRecords on a.UID equals b.PersonUID
-                                                 where b.Temperature > thresholdTemperature
+                                                 where b.Temperature >= thresholdTemperature
                                                  && b.Timestamp.Date == DateTime.Today
                                                  && devices.Contains(b.DeviceId)
                                                  select new { a.EmployeeId }).Distinct().Count();
@@ -574,7 +574,7 @@ namespace Covid19TemperatureAPI.Controllers
                 int visitorTemperatureAlerts = (Context.TemperatureRecords
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
                         && x.Timestamp.Date == DateTime.Today
-                        && x.Temperature > thresholdTemperature
+                        && x.Temperature >= thresholdTemperature
                         && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
@@ -705,7 +705,7 @@ namespace Covid19TemperatureAPI.Controllers
                 // Count Temperature Alerts. First count employees alerts
                 int employeeTemperatureAlerts = (from a in Context.Employees
                                                  join b in Context.TemperatureRecords on a.UID equals b.PersonUID
-                                                 where b.Temperature > thresholdTemperature
+                                                 where b.Temperature >= thresholdTemperature
                                                  && b.Timestamp.Date == DateTime.Today
                                                  && devices.Contains(b.DeviceId)
                                                  select new { a.EmployeeId }).Distinct().Count();
@@ -714,7 +714,7 @@ namespace Covid19TemperatureAPI.Controllers
                 int visitorTemperatureAlerts = (Context.TemperatureRecords
                     .Where(x => x.PersonUID == ConfigReader.VisitorUID
                         && x.Timestamp.Date == DateTime.Today
-                        && x.Temperature > thresholdTemperature
+                        && x.Temperature >= thresholdTemperature
                         && devices.Contains(x.DeviceId)
                         && !string.IsNullOrEmpty(x.Mobile))
                     .Select(x => x.Mobile)).Distinct().Count();
@@ -786,15 +786,15 @@ namespace Covid19TemperatureAPI.Controllers
         ///                 "location": "Floor 3 Reception Gate",
         ///                 "temperature": "36.7",
         ///                 "mask": false,
-        ///                 "timestamp": "2020-07-25 23:13:44",
-        ///                 "image": "data:image/jpeg;base64,/9j/4AA...SQT/9k="
+        ///                 "timestamp": "2020-07-26 23:13:44",
+        ///                 "image": "data:image/jpeg;base64,/9j/4AAQSk...sYSSQT/9k="
         ///             },
         ///             {
         ///                 ...
         ///             }
         ///             ...
         ///         ]
-        ///     }        
+        ///     }
         /// Response codes:
         ///     1200 = "Successful"
         ///     1201 = "Error"
@@ -881,9 +881,9 @@ namespace Covid19TemperatureAPI.Controllers
                                         a.Temperature,
                                         //MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
                                         Mask = c != null ? false : true,   // false means no mask
-                                        DateTime = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
                                         //Image =  a.ImagePath.ConvertImageUrlToBase64().Result,
-                                        Captured = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
                                         //a.IC,
                                         //a.Mobile
                                     };
@@ -900,15 +900,15 @@ namespace Covid19TemperatureAPI.Controllers
                                          a.Location,
                                          Temperature = c != null ? c.Temperature.ToString() : string.Empty,
                                          a.Mask,
-                                         DateTime = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
                                          //Image = a.ImagePath.ConvertImageUrlToBase64().Result,
-                                         Captured = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
                                          //a.IC,
                                          //a.Mobile
                                      };
 
                 var entranceLogForToday = from a in leftOuterJoin.Union(rightOuterJoin)
-                                    orderby a.DateTime descending
+                                    orderby a.Timestamp descending
                                     select a;
 
 
@@ -917,6 +917,177 @@ namespace Covid19TemperatureAPI.Controllers
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
                     entranceLogForToday
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// GetAlertsForToday API. Returns the  Alert log for Today.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getalertsfortoday
+        ///     {
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "alertLogForToday": [
+        ///             {
+        ///                 "person": "Abhsihek",
+        ///                 "temperature": "38.6",
+        ///                 "mask": true,
+        ///                 "timestamp": "2020-07-26 13:14:02",
+        ///                 "image": "data:image/jpeg;base64,/9j/4A...Uyf/Z"
+        ///             },
+        ///             {
+        ///                 ...
+        ///             }
+        ///         ]
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getalertsfortoday")]
+        public ActionResult GetAlertsForToday([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetAlertsForToday() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
+                    .Select(x => x.DeviceId)).Distinct();
+
+                var temperatureTimestamps = (Context.TemperatureRecords
+                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                    .GroupBy(x => x.ImagePath)
+                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+
+                var maskTimestamps = (Context.MaskRecords
+                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                    .GroupBy(x => x.ImagePath)
+                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+
+                var temperatureRecords = (from a in Context.TemperatureRecords
+                                          join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          select new
+                                          {
+                                              //a.PersonUID,
+                                              a.PersonName,
+                                              //a.DeviceId,
+                                              //a.Device.Gate.GateNumber,
+                                              //Location = a.Device.Gate.AdditionalDetails,
+                                              Temperature = a.Temperature.ToString("#.#"),
+                                              Timestamp = a.Timestamp.ToString(),
+                                              a.ImagePath,
+                                              a.ImageBase64,
+                                              //a.IC,
+                                              //a.Mobile
+                                          }).Distinct();
+
+                var maskRecords = (from a in Context.MaskRecords
+                                   join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   select new
+                                   {
+                                       //a.PersonUID,
+                                       a.PersonName,
+                                       //a.DeviceId,
+                                       //a.Device.Gate.GateNumber,
+                                       //Location = a.Device.Gate.AdditionalDetails,
+                                       //MaskValue = a.MaskValue.ToString(),
+                                       Mask = false,
+                                       Timestamp = a.Timestamp.ToString(),
+                                       a.ImagePath,
+                                       a.ImageBase64,
+                                       //a.IC,
+                                       //a.Mobile
+                                   }).Distinct();
+
+                var leftOuterJoin = from a in temperatureRecords
+                                    join b in maskRecords on a.Timestamp equals b.Timestamp into bb
+                                    from c in bb.DefaultIfEmpty()
+                                    select new
+                                    {
+                                        //Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                        Person = a.PersonName,
+                                        //a.DeviceId,
+                                        //a.GateNumber,
+                                        //a.Location,
+                                        a.Temperature,
+                                        //MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
+                                        Mask = c != null ? false : true,   // false means no mask
+                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        //Image =  a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        //a.IC,
+                                        //a.Mobile
+                                    };
+
+                var rightOuterJoin = from a in maskRecords
+                                     join b in temperatureRecords on a.Timestamp equals b.Timestamp into bb
+                                     from c in bb.DefaultIfEmpty()
+                                     select new
+                                     {
+                                         //Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                         Person = a.PersonName,
+                                         //a.DeviceId,
+                                         //a.GateNumber,
+                                         //a.Location,
+                                         Temperature = c != null ? c.Temperature.ToString() : string.Empty,
+                                         a.Mask,
+                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         //Image = a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         //a.IC,
+                                         //a.Mobile
+                                     };
+
+                var entranceLogForToday = from a in leftOuterJoin.Union(rightOuterJoin)
+                                          orderby a.Timestamp descending
+                                          select a;
+
+                var temperatureThreshold = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                var alertLogForToday = entranceLogForToday
+                    .Where(x => !x.Mask || Convert.ToDecimal(x.Temperature) > temperatureThreshold)
+                    .OrderByDescending(x => x.Timestamp);
+
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    alertLogForToday
                 });
             }
             catch (Exception e)
