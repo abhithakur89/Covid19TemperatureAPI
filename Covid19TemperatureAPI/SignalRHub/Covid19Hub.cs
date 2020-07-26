@@ -149,7 +149,7 @@ namespace Covid19TemperatureAPI.SignalRHub
                                     Port = Convert.ToInt32(Configuration["SMTPPort"]),
                                     EnableSsl = true,
                                     DeliveryMethod = SmtpDeliveryMethod.Network,
-                                    UseDefaultCredentials = false,
+                                    UseDefaultCredentials = true,
                                     Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
                                 };
 
