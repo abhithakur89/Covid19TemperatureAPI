@@ -50,12 +50,6 @@ namespace Covid19TemperatureAPI.Controllers
         /// 
         ///     POST /c19server/addnewemployee
         ///     {
-        ///         "siteid":"1"
-        ///     }
-        ///      
-        /// Sample response:
-        /// 
-        ///     {
         ///         "EmployeeId" : "E5456",
         ///         "EmployeeName" : "Bill Gates",
         ///         "Mobile" : "",
@@ -64,6 +58,12 @@ namespace Covid19TemperatureAPI.Controllers
         ///         "ImageBase64" : "data:image/jpeg;base64,/9j/4...gICA=",
         ///         "ImageExtension" : "jpg",
         ///         "Role" : "Test Role"
+        ///     }
+        ///      
+        /// Sample response:
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
         ///     }
         ///     
         /// Response codes:
