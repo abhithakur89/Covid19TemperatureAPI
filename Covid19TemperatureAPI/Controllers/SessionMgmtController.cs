@@ -20,7 +20,7 @@ namespace Covid19TemperatureAPI.Controllers
     [ApiController]
     public class LoginController: ControllerBase
     {
-        private IConfiguration Configuration;
+        private readonly IConfiguration Configuration;
         private readonly ILogger<LoginController> _logger;
         private ApplicationDbContext Context { get; set; }
 
@@ -141,7 +141,7 @@ namespace Covid19TemperatureAPI.Controllers
     [Authorize(AuthenticationSchemes = "Bearer")]
     public class LogoutController : ControllerBase
     {
-        private IConfiguration Configuration;
+        private readonly IConfiguration Configuration;
         private readonly ILogger<LogoutController> _logger;
         private ApplicationDbContext Context { get; set; }
 

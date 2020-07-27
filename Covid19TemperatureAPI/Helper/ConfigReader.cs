@@ -9,21 +9,6 @@ namespace Covid19TemperatureAPI.Helper
 {
     public static class ConfigReader
     {
-        const string DefaultTemperatureThresholdConfig = "DefaultTemperatureThreshold";
-        const string DefaultTemperatureAlertHeaderConfig = "DefaultTemperatureAlertHeader";
-
-        const string DefaultMaskAlertHeaderConfig = "DefaultMaskAlertHeader";
-
-        const string DefaultSendAlertForTemperatureSMSConfig = "SMSAlertForTemperatureEnabled";
-        const string DefaultSMSSenderConfig = "DefaultSMSSender";
-
-        const string DefaultSendAlertForTemperatureEmailConfig = "EmailAlertForTemperatureEnabled";
-        const string DefaultSendAlertForMaskEmailConfig = "EmailAlertForMaskEnabled";
-
-        const string DefaultEmailSenderConfig = "DefaultEmailSenderName";
-
-        const string DefaultSendAlertForMaskSMSConfig = "SMSAlertForMaskEnabled";
-
         public const string VisitorUID = "0";
         public const int NoMaskValue = 2;
 
@@ -34,7 +19,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault(), out decimal thresholdTemperature);
 
             if (!res)
-                decimal.TryParse(Configuration[DefaultTemperatureThresholdConfig], out thresholdTemperature);
+                decimal.TryParse(Configuration["DefaultTemperatureThreshold"], out thresholdTemperature);
 
             return thresholdTemperature;
         }
@@ -46,7 +31,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultTemperatureAlertHeaderConfig];
+                res = Configuration["DefaultTemperatureAlertHeader"];
 
             return res;
         }
@@ -58,7 +43,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultMaskAlertHeaderConfig];
+                res = Configuration["DefaultMaskAlertHeader"];
 
             return res;
         }
@@ -71,7 +56,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultTemperatureAlertHeaderConfig];
+                res = Configuration["DefaultTemperatureAlertHeader"];
 
             return res;
         }
@@ -83,7 +68,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultMaskAlertHeaderConfig];
+                res = Configuration["DefaultMaskAlertHeader"];
 
             return res;
         }
@@ -97,7 +82,7 @@ namespace Covid19TemperatureAPI.Helper
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertForTemperatureSMSConfig];
+                res = Configuration["SMSAlertForTemperatureEnabled"];
             }
 
             if (res == "0") return false;
@@ -114,7 +99,7 @@ namespace Covid19TemperatureAPI.Helper
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertForMaskSMSConfig];
+                res = Configuration["SMSAlertForMaskEnabled"];
             }
 
             if (res == "0") return false;
@@ -132,7 +117,7 @@ namespace Covid19TemperatureAPI.Helper
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertForTemperatureEmailConfig];
+                res = Configuration["EmailAlertForTemperatureEnabled"];
             }
 
             if (res == "0") return false;
@@ -149,7 +134,7 @@ namespace Covid19TemperatureAPI.Helper
 
             if (string.IsNullOrEmpty(res))
             {
-                res = Configuration[DefaultSendAlertForMaskEmailConfig];
+                res = Configuration["EmailAlertForMaskEnabled"];
             }
 
             if (res == "0") return false;
@@ -166,7 +151,7 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultSMSSenderConfig];
+                res = Configuration["DefaultSMSSender"];
 
             return res;
         }
@@ -178,10 +163,23 @@ namespace Covid19TemperatureAPI.Helper
                    .Select(x => x.ConfigValue).FirstOrDefault();
 
             if (string.IsNullOrEmpty(res))
-                res = Configuration[DefaultEmailSenderConfig];
+                res = Configuration["DefaultEmailSenderName"];
 
             return res;
         }
+
+        public static string GetSensetimeEmployeeGroupId(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SensetimeEmployeeGroupId")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(res))
+                res = Configuration["DefaultSensetimeEmployeeGroupId"];
+
+            return res;
+        }
+
 
     }
 }

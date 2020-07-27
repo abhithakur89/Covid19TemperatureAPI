@@ -20,10 +20,9 @@ namespace Covid19TemperatureAPI.Controllers
     [Authorize(AuthenticationSchemes = "Bearer")]
     public class SiteController : ControllerBase
     {
-        private IConfiguration Configuration;
+        private readonly IConfiguration Configuration;
         private readonly ILogger<SiteController> _logger;
         private ApplicationDbContext Context { get; set; }
-        ISensetime Sensetime;
 
         private enum ResponseCodes
         {
@@ -33,12 +32,11 @@ namespace Covid19TemperatureAPI.Controllers
             SystemError = 1201,
         }
 
-        public SiteController(IConfiguration configuration, ApplicationDbContext applicationDbContext, ILogger<SiteController> logger, ISensetime sensetime)
+        public SiteController(IConfiguration configuration, ApplicationDbContext applicationDbContext, ILogger<SiteController> logger)
         {
             Configuration = configuration;
             Context = applicationDbContext;
             _logger = logger;
-            Sensetime = sensetime;
         }
 
         /// <summary>
@@ -247,7 +245,7 @@ namespace Covid19TemperatureAPI.Controllers
 
                 _logger.LogInformation($"Paramerters: {received.SiteId}");
 
-                int.TryParse(received.SiteId, out int nSiteId);
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
 
                 var devices = (Context.Devices
                     .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
