@@ -36,6 +36,12 @@ namespace Covid19TemperatureAPI.Entities.Migrations
                 name: "IX_MaskRecords_DeviceId",
                 table: "MaskRecords",
                 column: "DeviceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaskRecords_Timestamp",
+                table: "MaskRecords",
+                column: "Timestamp");
+
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

@@ -821,18 +821,19 @@ namespace Covid19TemperatureAPI.Controllers
                     .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
                     .Select(x => x.DeviceId)).Distinct();
 
-                var temperatureTimestamps = (Context.TemperatureRecords
-                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
-                    .GroupBy(x => x.ImagePath)
-                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+                //var temperatureTimestamps = (Context.TemperatureRecords
+                //    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                //    .GroupBy(x => x.ImagePath)
+                //    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
 
-                var maskTimestamps = (Context.MaskRecords
-                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
-                    .GroupBy(x => x.ImagePath)
-                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+                //var maskTimestamps = (Context.MaskRecords
+                //    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                //    .GroupBy(x => x.ImagePath)
+                //    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
 
                 var temperatureRecords = (from a in Context.TemperatureRecords
-                                          join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          //join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          where a.Timestamp.Date==DateTime.Today && devices.Contains(a.DeviceId)
                                           select new
                                           {
                                               a.PersonUID,
@@ -849,7 +850,8 @@ namespace Covid19TemperatureAPI.Controllers
                                           }).Distinct();
 
                 var maskRecords = (from a in Context.MaskRecords
-                                   join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   //join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   where a.Timestamp.Date==DateTime.Today && devices.Contains(a.DeviceId)
                                    select new
                                    {
                                        a.PersonUID,
@@ -986,18 +988,19 @@ namespace Covid19TemperatureAPI.Controllers
                     .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
                     .Select(x => x.DeviceId)).Distinct();
 
-                var temperatureTimestamps = (Context.TemperatureRecords
-                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
-                    .GroupBy(x => x.ImagePath)
-                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+                //var temperatureTimestamps = (Context.TemperatureRecords
+                //    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                //    .GroupBy(x => x.ImagePath)
+                //    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
 
-                var maskTimestamps = (Context.MaskRecords
-                    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
-                    .GroupBy(x => x.ImagePath)
-                    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
+                //var maskTimestamps = (Context.MaskRecords
+                //    .Where(x => x.Timestamp.Date == DateTime.Today && devices.Contains(x.DeviceId))
+                //    .GroupBy(x => x.ImagePath)
+                //    .Select(x => new { Image = x.Key, LatestTimestamp = x.Max(y => y.Timestamp).ToString() })).Distinct();
 
                 var temperatureRecords = (from a in Context.TemperatureRecords
-                                          join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          //join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          where a.Timestamp.Date==DateTime.Today && devices.Contains(a.DeviceId)
                                           select new
                                           {
                                               //a.PersonUID,
@@ -1014,7 +1017,8 @@ namespace Covid19TemperatureAPI.Controllers
                                           }).Distinct();
 
                 var maskRecords = (from a in Context.MaskRecords
-                                   join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   //join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   where a.Timestamp.Date==DateTime.Today && devices.Contains(a.DeviceId)
                                    select new
                                    {
                                        //a.PersonUID,
