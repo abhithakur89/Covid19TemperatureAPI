@@ -231,7 +231,7 @@ namespace Covid19TemperatureAPI.Controllers
                     if(temperatureAlertRecord.PersonUID==ConfigReader.VisitorUID)
                     {
                         var temperatureRecords = (from a in Context.TemperatureRecords
-                                                  where a.Timestamp.Date >= dtStartTimestamp && a.Mobile == temperatureAlertRecord.Mobile
+                                                  where a.Timestamp >= dtStartTimestamp && a.Mobile == temperatureAlertRecord.Mobile
                                                   select new
                                                   {
                                                       a.PersonUID,
@@ -244,7 +244,7 @@ namespace Covid19TemperatureAPI.Controllers
                                                   }).Distinct();
 
                         var maskRecords = (from a in Context.MaskRecords
-                                           where a.Timestamp.Date >= dtStartTimestamp && a.Mobile == temperatureAlertRecord.Mobile
+                                           where a.Timestamp >= dtStartTimestamp && a.Mobile == temperatureAlertRecord.Mobile
                                            select new
                                            {
                                                a.PersonUID,
@@ -298,7 +298,7 @@ namespace Covid19TemperatureAPI.Controllers
                     else
                     {
                         var temperatureRecords = (from a in Context.TemperatureRecords
-                                                  where a.Timestamp.Date >= dtStartTimestamp && a.PersonUID == temperatureAlertRecord.PersonUID
+                                                  where a.Timestamp >= dtStartTimestamp && a.PersonUID == temperatureAlertRecord.PersonUID
                                                   select new
                                                   {
                                                       a.PersonUID,
@@ -311,7 +311,7 @@ namespace Covid19TemperatureAPI.Controllers
                                                   }).Distinct();
 
                         var maskRecords = (from a in Context.MaskRecords
-                                           where a.Timestamp.Date >= dtStartTimestamp && a.PersonUID == temperatureAlertRecord.PersonUID
+                                           where a.Timestamp >= dtStartTimestamp && a.PersonUID == temperatureAlertRecord.PersonUID
                                            select new
                                            {
                                                a.PersonUID,
@@ -379,7 +379,7 @@ namespace Covid19TemperatureAPI.Controllers
                     if (maskAlertRecord.PersonUID == ConfigReader.VisitorUID)
                     {
                         var temperatureRecords = (from a in Context.TemperatureRecords
-                                                  where a.Timestamp.Date >= dtStartTimestamp && a.Mobile == maskAlertRecord.Mobile
+                                                  where a.Timestamp >= dtStartTimestamp && a.Mobile == maskAlertRecord.Mobile
                                                   select new
                                                   {
                                                       a.PersonUID,
@@ -392,7 +392,7 @@ namespace Covid19TemperatureAPI.Controllers
                                                   }).Distinct();
 
                         var maskRecords = (from a in Context.MaskRecords
-                                           where a.Timestamp.Date >= dtStartTimestamp && a.Mobile == maskAlertRecord.Mobile
+                                           where a.Timestamp >= dtStartTimestamp && a.Mobile == maskAlertRecord.Mobile
                                            select new
                                            {
                                                a.PersonUID,
@@ -446,7 +446,7 @@ namespace Covid19TemperatureAPI.Controllers
                     else
                     {
                         var temperatureRecords = (from a in Context.TemperatureRecords
-                                                  where a.Timestamp.Date >= dtStartTimestamp && a.PersonUID == maskAlertRecord.PersonUID
+                                                  where a.Timestamp >= dtStartTimestamp && a.PersonUID == maskAlertRecord.PersonUID
                                                   select new
                                                   {
                                                       a.PersonUID,
@@ -459,7 +459,7 @@ namespace Covid19TemperatureAPI.Controllers
                                                   }).Distinct();
 
                         var maskRecords = (from a in Context.MaskRecords
-                                           where a.Timestamp.Date >= dtStartTimestamp && a.PersonUID == maskAlertRecord.PersonUID
+                                           where a.Timestamp >= dtStartTimestamp && a.PersonUID == maskAlertRecord.PersonUID
                                            select new
                                            {
                                                a.PersonUID,
@@ -513,6 +513,41 @@ namespace Covid19TemperatureAPI.Controllers
 
                 }
 
+                throw new Exception("Undefined");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        [Route("getpotentialview")]
+        public ActionResult GetPotentialView([FromBody]JObject jparams)
+        {
+            try
+            {
+                _logger.LogInformation("GetPotentialView() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { AlertTimestamp = string.Empty, StartTimestamp = string.Empty, EndTimestamp = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.AlertTimestamp}, {received.StartTimestamp}, {received.EndTimestamp}");
+
+                DateTime.TryParse(received.AlertTimestamp, out DateTime dtAlertTimestamp);
+                DateTime.TryParse(received.StartTimestamp, out DateTime dtStartTimestamp);
+                DateTime.TryParse(received.StartTimestamp, out DateTime dtEndTimestamp);
+
+
+                
                 throw new Exception("Undefined");
             }
             catch (Exception e)
