@@ -528,6 +528,42 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GetPotentialView API. Returns the trace of persons entering through same gate as an alert detected.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getpotentialview
+        ///     {
+        ///         "alertTimestamp":"2020-07-29 09:40:24",
+        ///         "startTimestamp":"2020-07-29 09:30:00",
+        ///         "endTimestamp":"2020-07-29 10:05:00"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "potentialView": [
+        ///             {
+        ///                 "name": "Bill",
+        ///                 "visitor": true
+        ///             },
+        ///             {
+        ///                 "name": "Abhishek",
+        ///                 "visitor": false
+        ///             }
+        ///         ]
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
         [HttpPost]
         [Route("getpotentialview")]
         public ActionResult GetPotentialView([FromBody]JObject jparams)
@@ -544,10 +580,74 @@ namespace Covid19TemperatureAPI.Controllers
 
                 DateTime.TryParse(received.AlertTimestamp, out DateTime dtAlertTimestamp);
                 DateTime.TryParse(received.StartTimestamp, out DateTime dtStartTimestamp);
-                DateTime.TryParse(received.StartTimestamp, out DateTime dtEndTimestamp);
+                DateTime.TryParse(received.EndTimestamp, out DateTime dtEndTimestamp);
+
+                IQueryable<string> devices = null;
+
+                // Check if it's a temperature alert
+                var temperatureAlertRecord = Context.TemperatureRecords
+                    .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
+                    ?.Select(x => new
+                    {
+                        x.PersonName,
+                        x.Device
+                    })?.FirstOrDefault();
+
+                if (temperatureAlertRecord != null)
+                {
+                    // Get all the device at this gate
+                    devices = Context.Devices
+                        .Where(x => x.GateId == temperatureAlertRecord.Device.GateId)
+                        .Select(x => x.DeviceId);
+                }
+                else
+                {
+                    // Check if it's a mask alert
+                    var maskAlertRecord = Context.MaskRecords
+                        .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
+                        ?.Select(x => new
+                        {
+                            x.PersonName,
+                            x.Device
+                        })?.FirstOrDefault();
+
+                    if (maskAlertRecord != null)
+                    {
+                        // Get all the device at this gate
+                        devices = Context.Devices
+                            .Where(x => x.GateId == maskAlertRecord.Device.GateId)
+                            .Select(x => x.DeviceId);
+                    }
+                }
+
+                if (devices == null) throw new Exception("Could not find the alert");
 
 
-                
+                // find all temperature alerts within this time frames
+                var potentialView = (from a in Context.TemperatureRecords
+                                     join b in Context.Employees on a.PersonUID equals b.UID into bb
+                                     from c in bb.DefaultIfEmpty()
+                                     where a.Timestamp >= dtStartTimestamp
+                                         && a.Timestamp <= dtEndTimestamp
+                                         && devices.Contains(a.DeviceId)
+                                     select new
+                                     {
+                                         ID = a.PersonUID == ConfigReader.VisitorUID ? a.Mobile : c.EmployeeId,
+                                         Name = a.PersonUID == ConfigReader.VisitorUID
+                                             ? a.PersonName
+                                             : c.EmployeeName,
+                                         Visitor = a.PersonUID == ConfigReader.VisitorUID
+                                     })?.Distinct()
+                        ?.Select(x => new { x.Name, x.Visitor });
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    potentialView
+                });
+
+
                 throw new Exception("Undefined");
             }
             catch (Exception e)
