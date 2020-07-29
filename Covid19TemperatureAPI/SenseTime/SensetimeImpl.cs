@@ -18,7 +18,7 @@ namespace Covid19TemperatureAPI.SenseTime
         private readonly ILogger<SensetimeImpl> _logger;
         private ApplicationDbContext Context { get; set; }
 
-        private static string AuthToken = string.Empty;
+        //private static string AuthToken = string.Empty;
         private const string AuthTokenType = "Basic";
 
         public SensetimeImpl(IConfiguration configuration, ApplicationDbContext applicationDbContext,
@@ -29,7 +29,7 @@ namespace Covid19TemperatureAPI.SenseTime
             _logger = logger;
         }
 
-        public string Login()
+        private void Login()
         {
             try
             {
@@ -66,15 +66,16 @@ namespace Covid19TemperatureAPI.SenseTime
                 }
 
                 if (resposeObj.success)
-                    AuthToken = resposeObj.data;
+                {
+                    //AuthToken = resposeObj.data;
+                    ConfigReader.SaveSensetimeToken(Context, Configuration, resposeObj.data);
+                }
             }
             catch(Exception e)
             {
                 _logger.LogInformation($"SensetimeImpl.Login() error: {e.Message}");
-                AuthToken = string.Empty;
                 throw e;
             }
-            return AuthToken;
         }
 
         public string UploadBase64(string imageContent,string imageExtension)
@@ -98,7 +99,7 @@ namespace Covid19TemperatureAPI.SenseTime
                     var httpWebRequest = (HttpWebRequest)WebRequest.Create(Configuration["SensetimeUploadImageBase64Url"]);
                     httpWebRequest.ContentType = "application/json";
                     httpWebRequest.Method = "POST";
-                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {AuthToken}");
+                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {ConfigReader.GetSensetimeToken(Context,Configuration)}");
 
                     using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
                     {
@@ -172,7 +173,7 @@ namespace Covid19TemperatureAPI.SenseTime
                     var httpWebRequest = (HttpWebRequest)WebRequest.Create(Configuration["SensetimeCreatePersonUrl"]);
                     httpWebRequest.ContentType = "application/json";
                     httpWebRequest.Method = "POST";
-                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {AuthToken}");
+                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {ConfigReader.GetSensetimeToken(Context,Configuration)}");
 
                     using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
                     {
@@ -245,7 +246,7 @@ namespace Covid19TemperatureAPI.SenseTime
                     var httpWebRequest = (HttpWebRequest)WebRequest.Create(Configuration["SensetimeAddGroupMemberUrl"]);
                     httpWebRequest.ContentType = "application/json";
                     httpWebRequest.Method = "POST";
-                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {AuthToken}");
+                    httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, $"{AuthTokenType} {ConfigReader.GetSensetimeToken(Context,Configuration)}");
 
                     using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
                     {

@@ -181,6 +181,33 @@ namespace Covid19TemperatureAPI.Helper
             return res;
         }
 
+        public static string GetSensetimeToken(ApplicationDbContext DbContext, IConfiguration Configuration)
+        {
+            string res = DbContext.Configurations
+                   .Where(x => x.ConfigKey == "SensetimeToken")
+                   .Select(x => x.ConfigValue).FirstOrDefault();
+
+            return res;
+        }
+
+        public static void SaveSensetimeToken(ApplicationDbContext DbContext, IConfiguration Configuration, string sensetimeToken)
+        {
+            try
+            {
+                var res = DbContext.Configurations
+                       .Where(x => x.ConfigKey == "SensetimeToken")
+                       ?.Select(x => x).FirstOrDefault();
+
+                res.ConfigValue = sensetimeToken;
+
+                DbContext.Configurations.Update(res);
+                DbContext.SaveChanges();
+            }
+            catch (Exception) 
+            { 
+                // Suppressing. If cannot save the token then may be next time get a new token and save that.
+            }
+        }
 
     }
 }
