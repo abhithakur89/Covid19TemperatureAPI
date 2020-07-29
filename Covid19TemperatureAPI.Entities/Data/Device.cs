@@ -18,6 +18,13 @@ namespace Covid19TemperatureAPI.Entities.Data
         public int GateId { get; set; }
         public virtual Gate Gate { get; set; }
 
+        public string DeviceUUID { get; set; }
+        public string DeviceProductTypeUuid { get; set; }
+        public string DeviceTypeUuid { get; set; }
+        public string OperatePerson { get; set; }
+
+        public bool UpdatedThreshold { get; set; }
+
         public virtual ICollection<TemperatureRecord> TemperatureRecords { get; set; }
         public virtual ICollection<MaskRecord> MaskRecords { get; set; }
     }
