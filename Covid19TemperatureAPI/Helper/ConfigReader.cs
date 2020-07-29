@@ -11,11 +11,12 @@ namespace Covid19TemperatureAPI.Helper
     {
         public const string VisitorUID = "0";
         public const int NoMaskValue = 2;
+        public const string TemperatureThresholdConfigSettingName = "TemperatureThreshold";
 
         public static decimal GetTemperatureThreshold(ApplicationDbContext DbContext, IConfiguration Configuration)
         {
             bool res = decimal.TryParse(DbContext.Configurations
-                   .Where(x => x.ConfigKey == "TemperatureThreshold")
+                   .Where(x => x.ConfigKey == TemperatureThresholdConfigSettingName)
                    .Select(x => x.ConfigValue).FirstOrDefault(), out decimal thresholdTemperature);
 
             if (!res)
