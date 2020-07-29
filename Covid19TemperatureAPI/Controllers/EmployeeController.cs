@@ -242,5 +242,98 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// EditEmployee API. Edit employees in the system based on employeeId.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/editemployee
+        ///     {
+        ///         "EmployeeId" : "12345",
+        ///         "EmployeeName" : "E. Musk",
+        ///         "Mobile" : "12345",
+        ///         "SiteId" : "1",
+        ///         "DepartmentId" : "1",
+        ///         "Image" : "data:image/jpeg;base64,/9j/4AA...P/2Q==",
+        ///         "Role" : "Test role"
+        ///     }
+        ///      
+        /// Sample response:
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("editemployee")]
+        public ActionResult EditEmployee([FromBody]JObject jemployeeparams)
+        {
+            try
+            {
+                _logger.LogInformation("EditEmployee() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new
+                {
+                    EmployeeId = string.Empty,
+                    EmployeeName = string.Empty,
+                    Mobile=string.Empty,
+                    SiteId=string.Empty,
+                    DepartmentId=string.Empty,
+                    Image=string.Empty,
+                    Role=string.Empty
+                };
+
+                received = JsonConvert.DeserializeAnonymousType(jemployeeparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.EmployeeId}, {received.EmployeeName}, {received.Mobile}, " +
+                    $"{received.SiteId}, {received.DepartmentId}, {received.Image}, {received.Role}");
+
+                var employee = Context.Employees
+                    .Where(x => x.EmployeeId == received.EmployeeId)
+                    ?.Select(x => x)?.FirstOrDefault();
+
+                employee.EmployeeName = received.EmployeeName;
+                employee.Mobile = received.Mobile;
+
+                int.TryParse(received.SiteId, out int nSiteId);
+                employee.SiteId = nSiteId;
+
+                int.TryParse(received.DepartmentId, out int nDepartmentId);
+                employee.DepartmentId = nDepartmentId;
+
+                employee.ImageBase64 = received.Image;
+                employee.Role = received.Role;
+
+                Context.Employees.Update(employee);
+                Context.SaveChanges();
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName()
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
