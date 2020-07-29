@@ -23,7 +23,7 @@ namespace Covid19TemperatureAPI.Entities.Data
         public DbSet<Department> Departments { get; set; }
         public DbSet<TemperatureRecord> TemperatureRecords { get; set; }
         public DbSet<MaskRecord> MaskRecords { get; set; }
-        public DbSet<AlertEmailAddress> EmailAddresses { get; set; }
+        public DbSet<AlertEmailAddress> AlertEmailAddresses { get; set; }
         public DbSet<AlertMobileNumber> AlertMobileNumbers { get; set; }
         public DbSet<Configuration> Configurations { get; set; }
     }

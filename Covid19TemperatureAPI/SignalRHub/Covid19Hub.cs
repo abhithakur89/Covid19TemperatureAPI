@@ -124,7 +124,7 @@ namespace Covid19TemperatureAPI.SignalRHub
                             // Get Email addresses for this site 
                             var v = from a in DbContext.Devices
                                     join b in DbContext.Gates on a.GateId equals b.GateId
-                                    join c in DbContext.EmailAddresses on b.Floor.Building.SiteId equals c.SiteId
+                                    join c in DbContext.AlertEmailAddresses on b.Floor.Building.SiteId equals c.SiteId
                                     where a.DeviceId == notifiationMsgRecieved.DeviceId
                                     select new
                                     {
@@ -246,7 +246,7 @@ namespace Covid19TemperatureAPI.SignalRHub
                     // Get Email addresses for this site 
                     var v = from a in DbContext.Devices
                             join b in DbContext.Gates on a.GateId equals b.GateId
-                            join c in DbContext.EmailAddresses on b.Floor.Building.SiteId equals c.SiteId
+                            join c in DbContext.AlertEmailAddresses on b.Floor.Building.SiteId equals c.SiteId
                             where a.DeviceId == notifiationMsgRecieved.DeviceId
                             select new
                             {
