@@ -922,6 +922,162 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+
+        /// <summary>
+        /// GetLatestEntranceLog API. Returns the  latest entrance log in the systems. 
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getlatestentrancelog
+        ///     {
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "latestEntranceLog": {
+        ///             "visitor": false,
+        ///             "person": "Abhishek",
+        ///             "location": "Floor 3 Reception Gate",
+        ///             "temperature": "36.6",
+        ///             "mask": false,
+        ///             "timestamp": "2020-07-29 12:47:50",
+        ///             "image": "data:image/jpeg;base64,/9j/4AAQ...sWIqa//Z"
+        ///         }
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getlatestentrancelog")]
+        public ActionResult GetLatestEntranceLog([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetLatestEntranceLog() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
+                    .Select(x => x.DeviceId)).Distinct();
+
+                var temperatureRecords = (from a in Context.TemperatureRecords
+                                              //join b in temperatureTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                          where a.Timestamp.Date == DateTime.Today && devices.Contains(a.DeviceId)
+                                          select new
+                                          {
+                                              a.PersonUID,
+                                              a.PersonName,
+                                              //a.DeviceId,
+                                              //a.Device.Gate.GateNumber,
+                                              Location = a.Device.Gate.AdditionalDetails,
+                                              Temperature = a.Temperature.ToString("#.#"),
+                                              Timestamp = a.Timestamp.ToString(),
+                                              a.ImagePath,
+                                              a.ImageBase64,
+                                              //a.IC,
+                                              //a.Mobile
+                                          }).Distinct();
+
+                var maskRecords = (from a in Context.MaskRecords
+                                       //join b in maskTimestamps on a.Timestamp.ToString() equals b.LatestTimestamp
+                                   where a.Timestamp.Date == DateTime.Today && devices.Contains(a.DeviceId)
+                                   select new
+                                   {
+                                       a.PersonUID,
+                                       a.PersonName,
+                                       //a.DeviceId,
+                                       //a.Device.Gate.GateNumber,
+                                       Location = a.Device.Gate.AdditionalDetails,
+                                       //MaskValue = a.MaskValue.ToString(),
+                                       Mask = false,
+                                       Timestamp = a.Timestamp.ToString(),
+                                       a.ImagePath,
+                                       a.ImageBase64,
+                                       //a.IC,
+                                       //a.Mobile
+                                   }).Distinct();
+
+                var leftOuterJoin = from a in temperatureRecords
+                                    join b in maskRecords on a.Timestamp equals b.Timestamp into bb
+                                    from c in bb.DefaultIfEmpty()
+                                    select new
+                                    {
+                                        Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                        Person = a.PersonName,
+                                        //a.DeviceId,
+                                        //a.GateNumber,
+                                        a.Location,
+                                        a.Temperature,
+                                        //MaskValue = c != null ? c.MaskValue.ToString() : string.Empty,
+                                        Mask = c != null ? false : true,   // false means no mask
+                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        //Image =  a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                        //a.IC,
+                                        //a.Mobile
+                                    };
+
+                var rightOuterJoin = from a in maskRecords
+                                     join b in temperatureRecords on a.Timestamp equals b.Timestamp into bb
+                                     from c in bb.DefaultIfEmpty()
+                                     select new
+                                     {
+                                         Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                         Person = a.PersonName,
+                                         //a.DeviceId,
+                                         //a.GateNumber,
+                                         a.Location,
+                                         Temperature = c != null ? c.Temperature.ToString() : string.Empty,
+                                         a.Mask,
+                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         //Image = a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                         //a.IC,
+                                         //a.Mobile
+                                     };
+
+                var latestEntranceLog = (from a in leftOuterJoin.Union(rightOuterJoin)
+                                         orderby a.Timestamp descending
+                                         select a)?.First();
+
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    latestEntranceLog
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+
         /// <summary>
         /// GetAlertsForToday API. Returns the  Alert log for Today.
         /// </summary>
