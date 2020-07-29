@@ -804,5 +804,158 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GetAlertsByTimestamp API. Returns the trace of all alerts at a site based on timestamp.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getalertsbytimestamp
+        ///     {
+        ///         "siteid":"1",
+        ///         "starttimestamp":"2020-07-27 00:00:00",
+        ///         "endtimestamp":"2020-07-29 00:00:00"
+        ///         }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "alerts": [
+        ///             {
+        ///                 "visitor": false,
+        ///                 "person": "Abhishek",
+        ///                 "location": "Floor 3 Reception Gate",
+        ///                 "temperature": "36.6",
+        ///                 "mask": false,
+        ///                 "timestamp": "2020-07-29 12:47:50",
+        ///                 "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...ZYsQcbZnL0VO9HnHosWIqa//Z"
+        ///             },
+        ///             {
+        ///                 ...
+        ///             }
+        ///             ...
+        ///         ]
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+        
+        [HttpPost]
+        [Route("getalertsbytimestamp")]
+        public ActionResult GetAlertsByTimestamp([FromBody]JObject jparams)
+        {
+            try
+            {
+                _logger.LogInformation("GetAlertsByTimestamp() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty, StartTimestamp = string.Empty, EndTimestamp = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}, {received.StartTimestamp}, {received.EndTimestamp}");
+
+                int.TryParse(received.SiteId, out int nSiteId);
+
+                DateTime.TryParse(received.StartTimestamp, out DateTime dtStartTimestamp);
+                DateTime.TryParse(received.EndTimestamp, out DateTime dtEndTimestamp);
+
+                var devices = (Context.Devices
+                    .Where(x => x.Gate.Floor.Building.SiteId == nSiteId)
+                    .Select(x => x.DeviceId)).Distinct();
+
+                var temperatureRecords = (from a in Context.TemperatureRecords
+                                          where a.Timestamp.Date >= dtStartTimestamp 
+                                            && a.Timestamp.Date <= dtEndTimestamp
+                                            && devices.Contains(a.DeviceId)
+                                          select new
+                                          {
+                                              a.PersonUID,
+                                              a.PersonName,
+                                              Location = a.Device.Gate.AdditionalDetails,
+                                              Temperature = a.Temperature.ToString("#.#"),
+                                              Timestamp = a.Timestamp.ToString(),
+                                              a.ImagePath,
+                                              a.ImageBase64,
+                                          }).Distinct();
+
+                var maskRecords = (from a in Context.MaskRecords
+                                   where a.Timestamp.Date >= dtStartTimestamp
+                                    && a.Timestamp.Date <= dtEndTimestamp
+                                    && devices.Contains(a.DeviceId)
+                                   select new
+                                   {
+                                       a.PersonUID,
+                                       a.PersonName,
+                                       Location = a.Device.Gate.AdditionalDetails,
+                                       Mask = false,
+                                       Timestamp = a.Timestamp.ToString(),
+                                       a.ImagePath,
+                                       a.ImageBase64,
+                                   }).Distinct();
+
+                var leftOuterJoin = from a in temperatureRecords
+                                    join b in maskRecords on a.Timestamp equals b.Timestamp into bb
+                                    from c in bb.DefaultIfEmpty()
+                                    select new
+                                    {
+                                        Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                        Person = a.PersonName,
+                                        a.Location,
+                                        a.Temperature,
+                                        Mask = c != null ? false : true,   // false means no mask
+                                        Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                        Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                    };
+
+                var rightOuterJoin = from a in maskRecords
+                                     join b in temperatureRecords on a.Timestamp equals b.Timestamp into bb
+                                     from c in bb.DefaultIfEmpty()
+                                     select new
+                                     {
+                                         Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                         Person = a.PersonName,
+                                         a.Location,
+                                         Temperature = c != null ? c.Temperature.ToString() : string.Empty,
+                                         a.Mask,
+                                         Timestamp = a.Timestamp.Remove(a.Timestamp.Length - 8),
+                                         Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                     };
+
+                var allAlerts = from a in leftOuterJoin.Union(rightOuterJoin)
+                                          orderby a.Timestamp descending
+                                          select a;
+
+                var temperatureThreshold = ConfigReader.GetTemperatureThreshold(Context, Configuration);
+
+                var alerts = allAlerts
+                    .Where(x => !x.Mask || Convert.ToDecimal(x.Temperature) > temperatureThreshold)
+                    .OrderByDescending(x => x.Timestamp);
+
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    alerts
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
