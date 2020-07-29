@@ -529,7 +529,7 @@ namespace Covid19TemperatureAPI.Controllers
         }
 
         /// <summary>
-        /// GetPotentialView API. Returns the trace of persons entering through same gate as an alert detected.
+        /// GetPotentialView API. Returns the trace of persons entering through same gate at which an alert is detected.
         /// </summary>
         /// <remarks>
         /// Sample request:
@@ -645,6 +645,147 @@ namespace Covid19TemperatureAPI.Controllers
                     respcode = ResponseCodes.Successful,
                     description = ResponseCodes.Successful.DisplayName(),
                     potentialView
+                });
+
+
+                throw new Exception("Undefined");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// GetPotentialContacts API. Returns the trace of all records entering through same gate at which an alert is detected.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getpotentialcontacts
+        ///     {
+        ///         "alertTimestamp":"2020-07-29 12:47:50",
+        ///         "startTimestamp":"2020-07-29 12:37:00",
+        ///         "endTimestamp":"2020-07-29 12:57:00"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "potentialContacts": [
+        ///             {
+        ///                 "visitor": true,
+        ///                 "name": "Bill",
+        ///                 "location": "Floor 3 Reception Gate",
+        ///                 "image": "data:image/jpeg;base64,/9j/4AA.../2Q==",
+        ///                 "timestamp": "2020-07-29 12:47:06",
+        ///                 "temperature": "36.6"
+        ///             },
+        ///             {
+        ///                 ...
+        ///             }
+        ///             ...
+        ///         ]
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getpotentialcontacts")]
+        public ActionResult GetPotentialContacts([FromBody]JObject jparams)
+        {
+            try
+            {
+                _logger.LogInformation("GetPotentialContacts() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { AlertTimestamp = string.Empty, StartTimestamp = string.Empty, EndTimestamp = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.AlertTimestamp}, {received.StartTimestamp}, {received.EndTimestamp}");
+
+                DateTime.TryParse(received.AlertTimestamp, out DateTime dtAlertTimestamp);
+                DateTime.TryParse(received.StartTimestamp, out DateTime dtStartTimestamp);
+                DateTime.TryParse(received.EndTimestamp, out DateTime dtEndTimestamp);
+
+                IQueryable<string> devices = null;
+
+                // Check if it's a temperature alert
+                var temperatureAlertRecord = Context.TemperatureRecords
+                    .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
+                    ?.Select(x => new
+                    {
+                        x.PersonName,
+                        x.Device
+                    })?.FirstOrDefault();
+
+                if (temperatureAlertRecord != null)
+                {
+                    // Get all the device at this gate
+                    devices = Context.Devices
+                        .Where(x => x.GateId == temperatureAlertRecord.Device.GateId)
+                        .Select(x => x.DeviceId);
+                }
+                else
+                {
+                    // Check if it's a mask alert
+                    var maskAlertRecord = Context.MaskRecords
+                        .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
+                        ?.Select(x => new
+                        {
+                            x.PersonName,
+                            x.Device
+                        })?.FirstOrDefault();
+
+                    if (maskAlertRecord != null)
+                    {
+                        // Get all the device at this gate
+                        devices = Context.Devices
+                            .Where(x => x.GateId == maskAlertRecord.Device.GateId)
+                            .Select(x => x.DeviceId);
+                    }
+                }
+
+                if (devices == null) throw new Exception("Could not find the alert");
+
+
+                // find all temperature alerts within this time frames
+                var potentialContacts = from a in Context.TemperatureRecords
+                                        join b in Context.Employees on a.PersonUID equals b.UID into bb
+                                        from c in bb.DefaultIfEmpty()
+                                        where a.Timestamp >= dtStartTimestamp
+                                            && a.Timestamp <= dtEndTimestamp
+                                            && devices.Contains(a.DeviceId)
+                                        select new
+                                        {
+                                            Visitor = a.PersonUID == ConfigReader.VisitorUID,
+                                            Name = a.PersonUID == ConfigReader.VisitorUID
+                                                ? a.PersonName
+                                                : c.EmployeeName,
+                                            Location = a.Device.Gate.AdditionalDetails,
+                                            Image = !string.IsNullOrEmpty(a.ImageBase64) ? a.ImageBase64 : a.ImagePath.ConvertImageUrlToBase64().Result,
+                                            Timestamp = a.Timestamp.ToString().Remove(a.Timestamp.ToString().Length - 8),
+                                            Temperature = a.Temperature.ToString("#.#")
+                                        };
+                
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    potentialContacts
                 });
 
 
