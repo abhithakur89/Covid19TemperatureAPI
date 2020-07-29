@@ -273,5 +273,149 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// AddEmailaddress API. Adds an email address for a site.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/addemailaddress
+        ///     {
+        ///         "emailaddress":"abhishek.t@orange.com",
+        ///         "siteid":"1",
+        ///         "name":"Abhishek"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("addemailaddress")]
+        public ActionResult AddEmailaddress([FromBody]JObject jemailparams)
+        {
+            try
+            {
+                _logger.LogInformation("AddEmailaddress() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { EmailAddress = string.Empty, SiteId = string.Empty, Name = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jemailparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.EmailAddress}, {received.SiteId}, {received.Name}");
+
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
+
+                AlertEmailAddress alertEmailAddress = new AlertEmailAddress
+                {
+                    EmailId = received.EmailAddress,
+                    Name=received.Name,
+                    SiteId= nSiteId
+                };
+
+                Context.AlertEmailAddresses.Add(alertEmailAddress);
+                Context.SaveChanges();
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName()
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// AddMobileNumber API. Adds a mobile number for a site.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/addmobilenumber
+        ///     {
+        ///         "mobilenumber":"abhishek.t@orange.com",
+        ///         "name":"Abhishek",
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("addmobilenumber")]
+        public ActionResult AddMobileNumber([FromBody]JObject jmobileparams)
+        {
+            try
+            {
+                _logger.LogInformation("AddMobileNumber() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { MobileNumber = string.Empty, SiteId = string.Empty, Name = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jmobileparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.MobileNumber}, {received.SiteId}, {received.Name}");
+
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
+
+                AlertMobileNumber alertMobileNumber = new AlertMobileNumber
+                {
+                    MobileNumber = received.MobileNumber,
+                    Name = received.Name,
+                    SiteId = nSiteId
+                };
+
+                Context.AlertMobileNumbers.Add(alertMobileNumber);
+                Context.SaveChanges();
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName()
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
