@@ -137,6 +137,141 @@ namespace Covid19TemperatureAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// RemoveMobileNumber API. Removes a mobile number for a site.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/removemobilenumber
+        ///     {
+        ///         "mobilenumber":"6581375113",
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("removemobilenumber")]
+        public ActionResult RemoveMobileNumber([FromBody]JObject jmobileparams)
+        {
+            try
+            {
+                _logger.LogInformation("RemoveMobileNumber() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { MobileNumber = string.Empty, SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jmobileparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.MobileNumber}, {received.SiteId}");
+
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
+
+                var mobileRecord = Context.AlertMobileNumbers
+                    .Where(x => x.MobileNumber == received.MobileNumber && x.SiteId == nSiteId)
+                    ?.Select(x => x)?.FirstOrDefault();
+
+                Context.Remove(mobileRecord);
+                Context.SaveChanges();
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName()
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// RemoveEmailaddress API. Removes an email address for a site.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/removeemailaddress
+        ///     {
+        ///         "emailaddress":"abhishek.t@orange.com",
+        ///         "siteid":"1"
+        ///     }
+        ///      
+        /// Sample response:
+        /// 
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful"
+        ///     }
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("removeemailaddress")]
+        public ActionResult RemoveEmailAddress([FromBody]JObject jemailparams)
+        {
+            try
+            {
+                _logger.LogInformation("RemoveEmailAddress() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { EmailAddress = string.Empty, SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jemailparams.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.EmailAddress}, {received.SiteId}");
+
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
+
+                var mobileRecord = Context.AlertEmailAddresses
+                    .Where(x => x.EmailId == received.EmailAddress && x.SiteId == nSiteId)
+                    ?.Select(x => x)?.FirstOrDefault();
+
+                Context.Remove(mobileRecord);
+                Context.SaveChanges();
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName()
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
 
     }
 }
