@@ -148,5 +148,99 @@ namespace Covid19TemperatureAPI.Controllers
                 });
             }
         }
+
+        /// <summary>
+        /// GetAllEmployees API. Get all employees in the system based on site id.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /c19server/getallemployees
+        ///     {
+        ///         "siteId" : "1"
+        ///     }
+        ///      
+        /// Sample response:
+        ///     {
+        ///         "respcode": 1200,
+        ///         "description": "Successful",
+        ///         "employees": [
+        ///             {
+        ///                 "employeeId": "E0001",
+        ///                 "departmentId": 1,
+        ///                 "departmentCode": "DI",
+        ///                 "departmentName": "Digital Integration",
+        ///                 "employeeName": "Abhishek",
+        ///                 "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD.../9k=",
+        ///                 "mobile": "98812345",
+        ///                 "role": "Tester",
+        ///                 "siteId": 1
+        ///             },
+        ///             {
+        ///                 ...
+        ///             },
+        ///             ...
+        ///         ]
+        ///     }
+        ///     
+        /// Response codes:
+        ///     1200 = "Successful"
+        ///     1201 = "Error"
+        /// </remarks>
+        /// <returns>
+        /// </returns>
+
+        [HttpPost]
+        [Route("getallemployees")]
+        public ActionResult GetAllEmployees([FromBody]JObject jsiteId)
+        {
+            try
+            {
+                _logger.LogInformation("GetAllEmployees() called from: " + HttpContext.Connection.RemoteIpAddress.ToString());
+
+                var received = new { SiteId = string.Empty };
+
+                received = JsonConvert.DeserializeAnonymousType(jsiteId.ToString(Formatting.None), received);
+
+                _logger.LogInformation($"Paramerters: {received.SiteId}");
+
+                if (!int.TryParse(received.SiteId, out int nSiteId)) throw new Exception("Invalid Site Id");
+
+                var employees = Context.Employees
+                    .Where(x => x.SiteId == nSiteId)
+                    ?.Select(x => new
+                    {
+                        x.EmployeeId,
+                        x.DepartmentId,
+                        x.Department.DepartmentCode,
+                        x.Department.DepartmentName,
+                        x.EmployeeName,
+                        Image = x.ImageBase64,
+                        x.Mobile,
+                        x.Role,
+                        x.SiteId
+                    });
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.Successful,
+                    description = ResponseCodes.Successful.DisplayName(),
+                    employees
+                });
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Generic exception handler invoked. {e.Message}: {e.StackTrace}");
+
+                return new JsonResult(new
+                {
+                    respcode = ResponseCodes.SystemError,
+                    description = ResponseCodes.SystemError.DisplayName(),
+                    Error = e.Message
+                });
+            }
+        }
+
     }
 }
