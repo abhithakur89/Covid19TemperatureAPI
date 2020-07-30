@@ -261,7 +261,7 @@ namespace Covid19TemperatureAPI.Controllers
                                             from c in bb.DefaultIfEmpty()
                                             select new
                                             {
-                                                Visitor = true,
+                                                Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                 Person = a.PersonName,
                                                 a.Location,
                                                 a.Temperature,
@@ -275,7 +275,7 @@ namespace Covid19TemperatureAPI.Controllers
                                              from c in bb.DefaultIfEmpty()
                                              select new
                                              {
-                                                 Visitor = true,
+                                                 Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                  Person = a.PersonName,
                                                  a.Location,
                                                  Temperature = c != null ? c.Temperature.ToString() : string.Empty,
@@ -328,7 +328,7 @@ namespace Covid19TemperatureAPI.Controllers
                                             from c in bb.DefaultIfEmpty()
                                             select new
                                             {
-                                                Visitor = false,
+                                                Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                 Person = a.PersonName,
                                                 a.Location,
                                                 a.Temperature,
@@ -342,7 +342,7 @@ namespace Covid19TemperatureAPI.Controllers
                                              from c in bb.DefaultIfEmpty()
                                              select new
                                              {
-                                                 Visitor = true,
+                                                 Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                  Person = a.PersonName,
                                                  a.Location,
                                                  Temperature = c != null ? c.Temperature.ToString() : string.Empty,
@@ -409,7 +409,7 @@ namespace Covid19TemperatureAPI.Controllers
                                             from c in bb.DefaultIfEmpty()
                                             select new
                                             {
-                                                Visitor = true,
+                                                Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                 Person = a.PersonName,
                                                 a.Location,
                                                 a.Temperature,
@@ -423,7 +423,7 @@ namespace Covid19TemperatureAPI.Controllers
                                              from c in bb.DefaultIfEmpty()
                                              select new
                                              {
-                                                 Visitor = true,
+                                                 Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                  Person = a.PersonName,
                                                  a.Location,
                                                  Temperature = c != null ? c.Temperature.ToString() : string.Empty,
@@ -476,7 +476,7 @@ namespace Covid19TemperatureAPI.Controllers
                                             from c in bb.DefaultIfEmpty()
                                             select new
                                             {
-                                                Visitor = false,
+                                                Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                 Person = a.PersonName,
                                                 a.Location,
                                                 a.Temperature,
@@ -490,7 +490,7 @@ namespace Covid19TemperatureAPI.Controllers
                                              from c in bb.DefaultIfEmpty()
                                              select new
                                              {
-                                                 Visitor = true,
+                                                 Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                                  Person = a.PersonName,
                                                  a.Location,
                                                  Temperature = c != null ? c.Temperature.ToString() : string.Empty,
