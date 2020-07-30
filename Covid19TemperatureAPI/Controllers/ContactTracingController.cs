@@ -627,7 +627,7 @@ namespace Covid19TemperatureAPI.Controllers
 
                 var potentialView = potentialView1
                     ?.Where(x => x.ID != temperatureAlertRecord.ID)
-                    ?.Select(x => x);
+                    ?.Select(x => new { x.Name, x.Visitor });
 
                 return new JsonResult(new
                 {
@@ -717,6 +717,7 @@ namespace Covid19TemperatureAPI.Controllers
                     .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
                     ?.Select(x => new
                     {
+                        ID = x.PersonUID == ConfigReader.VisitorUID ? x.Mobile : x.PersonUID,
                         x.PersonName,
                         x.Device
                     })?.FirstOrDefault();
@@ -728,31 +729,12 @@ namespace Covid19TemperatureAPI.Controllers
                         .Where(x => x.GateId == temperatureAlertRecord.Device.GateId)
                         .Select(x => x.DeviceId);
                 }
-                else
-                {
-                    // Check if it's a mask alert
-                    var maskAlertRecord = Context.MaskRecords
-                        .Where(x => x.Timestamp.AddMilliseconds(-x.Timestamp.Millisecond) == dtAlertTimestamp)
-                        ?.Select(x => new
-                        {
-                            x.PersonName,
-                            x.Device
-                        })?.FirstOrDefault();
-
-                    if (maskAlertRecord != null)
-                    {
-                        // Get all the device at this gate
-                        devices = Context.Devices
-                            .Where(x => x.GateId == maskAlertRecord.Device.GateId)
-                            .Select(x => x.DeviceId);
-                    }
-                }
 
                 if (devices == null) throw new Exception("Could not find the alert");
 
 
                 // find all temperature alerts within this time frames
-                var potentialContacts = from a in Context.TemperatureRecords
+                var potentialContacts1 = from a in Context.TemperatureRecords
                                         join b in Context.Employees on a.PersonUID equals b.UID into bb
                                         from c in bb.DefaultIfEmpty()
                                         where a.Timestamp >= dtStartTimestamp
@@ -760,6 +742,7 @@ namespace Covid19TemperatureAPI.Controllers
                                             && devices.Contains(a.DeviceId)
                                         select new
                                         {
+                                            ID = a.PersonUID == ConfigReader.VisitorUID ? a.Mobile : a.PersonUID,
                                             Visitor = a.PersonUID == ConfigReader.VisitorUID,
                                             Name = a.PersonUID == ConfigReader.VisitorUID
                                                 ? a.PersonName
@@ -769,7 +752,20 @@ namespace Covid19TemperatureAPI.Controllers
                                             Timestamp = a.Timestamp.ToString().Remove(a.Timestamp.ToString().Length - 8),
                                             Temperature = a.Temperature.ToString("#.#")
                                         };
-                
+
+                var potentialContacts = potentialContacts1
+                    ?.Where(x => x.ID != temperatureAlertRecord.ID)
+                    ?.Select(x => new
+                    {
+                        x.Visitor,
+                        x.Name,
+                        x.Location,
+                        x.Image,
+                        x.Timestamp,
+                        x.Temperature
+                    });
+
+
                 return new JsonResult(new
                 {
                     respcode = ResponseCodes.Successful,
